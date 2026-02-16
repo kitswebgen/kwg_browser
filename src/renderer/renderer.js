@@ -121,38 +121,6 @@ function setupTabContextMenu() {
     window.addEventListener('scroll', hide, true);
 }
 
-function setupNetworkStatusToast() {
-    const toast = document.getElementById('network-status-toast');
-    const icon = document.getElementById('network-status-icon');
-    const msg = document.getElementById('network-status-msg');
-    if (!toast || !icon || !msg) return;
-
-    let t = null;
-    const show = (online, opts = {}) => {
-        clearTimeout(t);
-        icon.textContent = online ? '🟢' : '🔴';
-        msg.textContent = online ? 'Online' : 'Offline';
-        toast.classList.remove('hidden');
-        const autoHide = opts.autoHide ?? true;
-        const duration = opts.duration ?? 3000;
-        if (autoHide) t = setTimeout(() => toast.classList.add('hidden'), duration);
-    };
-
-    window.addEventListener('online', () => show(true));
-    window.addEventListener('offline', () => show(false, { autoHide: false }));
-
-    // Initial state: only show if offline.
-    if (window.electronAPI?.getNetworkStatus) {
-        window.electronAPI.getNetworkStatus()
-            .then((s) => { if (s && s.online === false) show(false, { autoHide: false }); })
-            .catch(() => { });
-    } else if (navigator.onLine === false) {
-        show(false, { autoHide: false });
-    }
-
-    toast.addEventListener('click', () => toast.classList.add('hidden'));
-}
-
 function setupLoginModal() {
     const modal = document.getElementById('login-modal');
     if (!modal) return;
@@ -268,7 +236,6 @@ function setupLoginModal() {
 }
 
 setupTabContextMenu();
-setupNetworkStatusToast();
 setupLoginModal();
 
 // User button: opens profile/settings or login.
