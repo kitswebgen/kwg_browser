@@ -13,7 +13,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     capturePage: () => ipcRenderer.invoke('capture-page'),
 
     // Cache
-    clearCache: () => ipcRenderer.invoke('clear-cache-production'),
+    clearCache: (options = {}) => ipcRenderer.invoke('clear-cache-production', options),
+    clearSiteData: (options = {}) => ipcRenderer.invoke('clear-site-data-production', options),
 
     // Events from main process
     onNewTab: (callback) => ipcRenderer.on('new-tab-from-main', (e, url) => callback(url)),

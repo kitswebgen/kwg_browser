@@ -373,6 +373,8 @@ if (window.electronAPI) {
     window.electronAPI.onMenuAction((action) => {
         switch (action) {
             case 'new-tab': TM.createTab(); break;
+            case 'new-incognito-tab': UI.newIncognitoTab(); break;
+            case 'clear-browsing-data': UI.openClearDataModal(); break;
             case 'find': UI.openFindBar(); break;
             case 'zoom-in': TM.zoomIn(); break;
             case 'zoom-out': TM.zoomOut(); break;

@@ -368,6 +368,33 @@ body {
     white-space: nowrap;
 }
 
+.tab-incognito {
+    width: 16px;
+    height: 16px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    opacity: 0.85;
+    flex-shrink: 0;
+}
+
+.tab.incognito .tab-incognito {
+    display: inline-flex !important;
+}
+
+.tab.incognito:hover:not(.active) {
+    background-color: color-mix(in srgb, #8a7cf8 10%, var(--sys-glass-highlight));
+    color: var(--md-sys-color-on-surface);
+}
+
+.tab.incognito.active {
+    background-color: color-mix(in srgb, #8a7cf8 22%, var(--md-sys-color-surface-container));
+    color: var(--md-sys-color-on-surface);
+    box-shadow: 0 2px 10px rgba(138, 124, 248, 0.18), 0 0 0 1px color-mix(in srgb, #8a7cf8 35%, transparent);
+    border: 1px solid transparent;
+}
+
 .tab:hover {
     background-color: var(--sys-glass-highlight);
     color: var(--md-sys-color-on-surface);
@@ -954,6 +981,18 @@ webview.active {
 .kits-btn.secondary {
     background: var(--sys-glass-element);
     color: var(--md-sys-color-on-surface);
+}
+
+.kits-btn.danger {
+    background: rgba(234, 67, 53, 0.14);
+    color: #EA4335;
+    border: 1px solid rgba(234, 67, 53, 0.25);
+}
+
+.kits-btn.danger:hover {
+    transform: translateY(-1px);
+    filter: none;
+    background: rgba(234, 67, 53, 0.22);
 }
 
 .kits-btn:hover {

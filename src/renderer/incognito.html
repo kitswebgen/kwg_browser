@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Incognito | KITS Browser</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg-gradient: radial-gradient(1200px 600px at 70% -10%, rgba(168, 199, 250, 0.18), transparent 55%),
+                linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.10);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent-color: #D0BCFF;
+            --card-hover: rgba(255, 255, 255, 0.08);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-gradient: radial-gradient(1200px 600px at 70% -10%, rgba(103, 80, 164, 0.12), transparent 55%),
+                    linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+                --glass-bg: rgba(255, 255, 255, 0.65);
+                --glass-border: rgba(0, 0, 0, 0.10);
+                --text-primary: #1F1F1F;
+                --text-secondary: rgba(31, 31, 31, 0.7);
+                --accent-color: #6750A4;
+                --card-hover: rgba(255, 255, 255, 0.85);
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg-gradient: radial-gradient(1200px 600px at 70% -10%, rgba(168, 199, 250, 0.18), transparent 55%),
+                linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.10);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent-color: #D0BCFF;
+            --card-hover: rgba(255, 255, 255, 0.08);
+        }
+
+        :root[data-theme="light"] {
+            --bg-gradient: radial-gradient(1200px 600px at 70% -10%, rgba(103, 80, 164, 0.12), transparent 55%),
+                linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(0, 0, 0, 0.10);
+            --text-primary: #1F1F1F;
+            --text-secondary: rgba(31, 31, 31, 0.7);
+            --accent-color: #6750A4;
+            --card-hover: rgba(255, 255, 255, 0.85);
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            user-select: none;
+        }
+
+        .wrap {
+            width: 100%;
+            max-width: 860px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 34px 32px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+        }
+
+        .top {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: color-mix(in srgb, var(--accent-color) 18%, transparent);
+            border: 1px solid color-mix(in srgb, var(--accent-color) 35%, transparent);
+            font-size: 28px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .sub {
+            margin: 0 0 18px;
+            opacity: 0.85;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 10px;
+        }
+
+        .card {
+            padding: 16px 16px;
+            border-radius: 18px;
+            background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
+            border: 1px solid var(--glass-border);
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            background: var(--card-hover);
+        }
+
+        .label {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .text {
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .hint {
+            margin-top: 18px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            opacity: 0.9;
+        }
+
+        kbd {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            border: 1px solid var(--glass-border);
+            background: color-mix(in srgb, var(--glass-bg) 70%, transparent);
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 680px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="top">
+            <div class="icon" aria-hidden="true">🕶</div>
+            <div>
+                <h1>Incognito</h1>
+                <p class="sub">Pages you visit in this tab won’t be saved to history, and cookies/site data are kept in a temporary session.</p>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <div class="label">🕘 No history</div>
+                <p class="text">KITS doesn’t record pages visited in incognito tabs.</p>
+            </div>
+            <div class="card">
+                <div class="label">🍪 Temporary cookies</div>
+                <p class="text">Cookies and site data are cleared when incognito tabs are closed.</p>
+            </div>
+            <div class="card">
+                <div class="label">🔖 Bookmarks still work</div>
+                <p class="text">You can open bookmarks from the bookmarks bar, and you can still add bookmarks.</p>
+            </div>
+            <div class="card">
+                <div class="label">⬇️ Downloads</div>
+                <p class="text">Downloaded files remain on disk, but browsing history is not saved.</p>
+            </div>
+        </div>
+
+        <div class="hint">Tip: Press <kbd>Ctrl</kbd> + <kbd>L</kbd> to focus the address bar.</div>
+    </div>
+
+    <script type="module">
+        function applyTheme(theme) {
+            const mode = String(theme || 'system').toLowerCase();
+            if (mode === 'dark' || mode === 'light') document.documentElement.dataset.theme = mode;
+            else document.documentElement.removeAttribute('data-theme');
+        }
+
+        const params = new URL(location.href).searchParams;
+        const theme = params.get('theme') || (localStorage.getItem('theme') || 'system');
+        applyTheme(theme);
+    </script>
+</body>
+
+</html>

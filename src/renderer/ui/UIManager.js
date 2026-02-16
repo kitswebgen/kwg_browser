@@ -476,6 +476,7 @@ export class UIManager {
                 const action = item.getAttribute('data-action');
                 switch (action) {
                     case 'new-tab': this.TM.createTab(); break;
+                    case 'new-incognito-tab': this.newIncognitoTab(); break;
                     case 'reopen-closed': {
                         const ok = this.TM.reopenClosedTab?.();
                         if (!ok) this.showNotification('No recently closed tabs');
@@ -484,6 +485,7 @@ export class UIManager {
                     case 'history': this.TM.createTab('history.html'); break;
                     case 'bookmarks': this.TM.createTab('bookmarks.html'); break;
                     case 'downloads': this.openDownloads(); break;
+                    case 'clear-browsing-data': this.openClearDataModal(); break;
                     case 'privacy': window.openPrivacyDashboard?.(); break;
                     case 'settings': document.getElementById('settings-modal')?.classList.remove('hidden'); break;
                     case 'screenshot': this.takeScreenshot(); break;
@@ -540,26 +542,111 @@ export class UIManager {
         }
     }
 
+    newIncognitoTab() {
+        const theme = String(this.theme || 'system');
+        const themeParam = theme === 'dark' || theme === 'light' ? `?theme=${encodeURIComponent(theme)}` : '';
+        this.TM.createTab(`incognito.html${themeParam}`, { active: true, incognito: true });
+        this.showNotification('🕶 Incognito tab opened');
+    }
+
+    openClearDataModal() {
+        document.getElementById('clear-data-modal')?.classList.remove('hidden');
+    }
+
+    closeClearDataModal() {
+        document.getElementById('clear-data-modal')?.classList.add('hidden');
+    }
+
+    async confirmClearDataFromModal() {
+        const history = document.getElementById('clear-data-history')?.checked;
+        const cache = document.getElementById('clear-data-cache')?.checked;
+        const cookies = document.getElementById('clear-data-cookies')?.checked;
+        const downloads = document.getElementById('clear-data-downloads')?.checked;
+        const bookmarks = document.getElementById('clear-data-bookmarks')?.checked;
+
+        if (!history && !cache && !cookies && !downloads && !bookmarks) {
+            this.showNotification('Select at least one item to clear');
+            return;
+        }
+
+        if (bookmarks) {
+            const ok = confirm('This will delete your saved bookmarks. Continue?');
+            if (!ok) return;
+        }
+
+        const confirmMsg = 'Clear selected browsing data now?';
+        if (!confirm(confirmMsg)) return;
+
+        const btn = document.getElementById('clear-data-confirm');
+        if (btn) btn.disabled = true;
+
+        this.showNotification('Clearing browsing data…', 2200);
+
+        const tasks = [];
+
+        if (history) {
+            tasks.push((async () => {
+                try { await db.clearHistory(); } catch (_) { }
+                try { localStorage.setItem('browsing-history', '[]'); } catch (_) { }
+            })());
+        }
+
+        if (bookmarks) {
+            tasks.push((async () => {
+                try { await this.setBookmarks([]); } catch (_) { }
+            })());
+        }
+
+        if (downloads && window.electronAPI) {
+            tasks.push((async () => {
+                try { await window.electronAPI.storeSet('downloadHistory', []); } catch (_) { }
+            })());
+        }
+
+        if (cache && window.electronAPI?.clearCache) {
+            tasks.push((async () => {
+                try { await window.electronAPI.clearCache({ cache: true }); } catch (_) { }
+            })());
+        }
+
+        if (cookies && window.electronAPI?.clearSiteData) {
+            tasks.push((async () => {
+                try { await window.electronAPI.clearSiteData({ cookies: true, cacheStorage: true, serviceWorkers: true }); } catch (_) { }
+            })());
+        }
+
+        await Promise.allSettled(tasks);
+
+        if (btn) btn.disabled = false;
+        this.closeClearDataModal();
+        this.showNotification('🧹 Browsing data cleared', 3000);
+        this.updateUI();
+    }
+
     handleKeyboardShortcuts(e) {
-        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); this.togglePalette(); }
-        if (e.ctrlKey && e.key === 't') { e.preventDefault(); this.TM.createTab(); }
+        const mod = e.ctrlKey || e.metaKey;
+
+        if (mod && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); this.togglePalette(); }
+        if (mod && (e.key === 't' || e.key === 'T')) { e.preventDefault(); this.TM.createTab(); }
         if (e.ctrlKey && e.key === 'Tab') { e.preventDefault(); e.shiftKey ? this.TM.switchToPrevTab?.() : this.TM.switchToNextTab?.(); }
-        if (e.ctrlKey && e.shiftKey && (e.key === 'T' || e.key === 't')) {
+        if (mod && e.shiftKey && (e.key === 'T' || e.key === 't')) {
             e.preventDefault();
             const ok = this.TM.reopenClosedTab?.();
             if (!ok) this.showNotification('No recently closed tabs');
         }
-        if (e.ctrlKey && e.shiftKey && (e.key === 'B' || e.key === 'b')) { e.preventDefault(); this.toggleBookmarksBar(); }
-        if (e.ctrlKey && e.key === 'w') { e.preventDefault(); if (this.TM.activeTabId) this.TM.closeTab(this.TM.activeTabId); }
-        if (e.ctrlKey && e.key === 'l') { e.preventDefault(); this.elements.omnibox.focus(); this.elements.omnibox.select(); }
-        if (e.ctrlKey && e.key === 'j') { e.preventDefault(); this.toggleAIPanel(); }
-        if (e.ctrlKey && e.key === 'd') { e.preventDefault(); this.bookmarkCurrentPage(); }
-        if (e.ctrlKey && e.key === 'f') { e.preventDefault(); this.openFindBar(); }
-        if (e.ctrlKey && e.key === 'p') { e.preventDefault(); const a = this.TM.getActive(); if (a) try { a.webviewEl.print(); } catch (e) { } }
-        if (e.ctrlKey && e.key === '=') { e.preventDefault(); this.TM.zoomIn(); }
-        if (e.ctrlKey && e.key === '-') { e.preventDefault(); this.TM.zoomOut(); }
-        if (e.ctrlKey && e.key === '0') { e.preventDefault(); this.TM.zoomReset(); }
-        if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) { e.preventDefault(); this.takeScreenshot(); }
+        if (mod && e.shiftKey && (e.key === 'B' || e.key === 'b')) { e.preventDefault(); this.toggleBookmarksBar(); }
+        if (mod && e.shiftKey && (e.key === 'N' || e.key === 'n')) { e.preventDefault(); this.newIncognitoTab(); }
+        if (mod && e.shiftKey && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); this.openClearDataModal(); }
+        if (mod && (e.key === 'w' || e.key === 'W')) { e.preventDefault(); if (this.TM.activeTabId) this.TM.closeTab(this.TM.activeTabId); }
+        if (mod && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); this.elements.omnibox.focus(); this.elements.omnibox.select(); }
+        if (mod && (e.key === 'j' || e.key === 'J')) { e.preventDefault(); this.toggleAIPanel(); }
+        if (mod && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); this.bookmarkCurrentPage(); }
+        if (mod && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); this.openFindBar(); }
+        if (mod && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); const a = this.TM.getActive(); if (a) try { a.webviewEl.print(); } catch (e) { } }
+        if (mod && e.key === '=') { e.preventDefault(); this.TM.zoomIn(); }
+        if (mod && e.key === '-') { e.preventDefault(); this.TM.zoomOut(); }
+        if (mod && e.key === '0') { e.preventDefault(); this.TM.zoomReset(); }
+        if (mod && e.shiftKey && (e.key === 'S' || e.key === 's')) { e.preventDefault(); this.takeScreenshot(); }
         if (e.key === 'F5') { e.preventDefault(); this.TM.reload(); }
         if (e.key === 'F11') { e.preventDefault(); window.electronAPI?.toggleFullscreen?.(); }
         if (e.key === 'Escape') {
@@ -922,6 +1009,7 @@ export class UIManager {
         const runCmd = (cmd, meta = {}) => {
             switch (cmd) {
                 case 'new-tab': this.TM.createTab(); break;
+                case 'new-incognito-tab': this.newIncognitoTab(); break;
                 case 'toggle-ai': this.toggleAIPanel(); break;
                 case 'toggle-zen': this.toggleZenMode(); break;
                 case 'toggle-reader': this.toggleReaderMode(); break;
@@ -930,6 +1018,7 @@ export class UIManager {
                 case 'open-downloads': this.openDownloads(); break;
                 case 'open-settings': document.getElementById('settings-modal')?.classList.remove('hidden'); break;
                 case 'open-privacy': window.openPrivacyDashboard?.(); break;
+                case 'clear-browsing-data': this.openClearDataModal(); break;
                 case 'reopen-closed': {
                     const ok = this.TM.reopenClosedTab?.();
                     if (!ok) this.showNotification('No recently closed tabs');
@@ -979,12 +1068,14 @@ export class UIManager {
 
             const commands = [
                 { cmd: 'new-tab', label: 'New Tab', icon: '+', kbd: 'Ctrl+T' },
+                { cmd: 'new-incognito-tab', label: 'New Incognito Tab', icon: '🕶', kbd: 'Ctrl+Shift+N' },
                 { cmd: 'reopen-closed', label: 'Reopen Closed Tab', icon: '↩︎', kbd: 'Ctrl+Shift+T' },
                 { cmd: 'open-history', label: 'History', icon: '🕘' },
                 { cmd: 'open-bookmarks', label: 'Bookmarks', icon: '🔖' },
                 { cmd: 'open-downloads', label: 'Downloads', icon: '⬇️' },
                 { cmd: 'open-settings', label: 'Settings', icon: '⚙️' },
                 { cmd: 'open-privacy', label: 'Privacy Dashboard', icon: '🛡️' },
+                { cmd: 'clear-browsing-data', label: 'Clear Browsing Data', icon: '🧹', kbd: 'Ctrl+Shift+Del' },
                 { cmd: 'toggle-bookmarks-bar', label: 'Toggle Bookmarks Bar', icon: '★', kbd: 'Ctrl+Shift+B' },
                 { cmd: 'toggle-ai', label: 'Toggle AI Panel', icon: '🤖', kbd: 'Ctrl+J' },
                 { cmd: 'toggle-zen', label: 'Toggle Zen Mode', icon: '🧘' },
@@ -1231,10 +1322,16 @@ export class UIManager {
         if (clearCacheBtn) {
             clearCacheBtn.onclick = async () => {
                 if (!window.electronAPI) return this.showNotification('Cache clearing unavailable');
-                const ok = await window.electronAPI.clearCache();
+                const ok = await window.electronAPI.clearCache({ cache: true });
                 this.showNotification(ok ? '🧹 Cache cleared' : 'Cache clear failed');
             };
         }
+
+        const openClearDataBtn = document.getElementById('open-clear-data-btn');
+        if (openClearDataBtn) openClearDataBtn.onclick = () => this.openClearDataModal();
+        document.getElementById('close-clear-data')?.addEventListener('click', () => this.closeClearDataModal());
+        document.getElementById('clear-data-cancel')?.addEventListener('click', () => this.closeClearDataModal());
+        document.getElementById('clear-data-confirm')?.addEventListener('click', () => this.confirmClearDataFromModal());
 
         document.getElementById('close-settings').onclick = () => document.getElementById('settings-modal').classList.add('hidden');
         document.getElementById('close-privacy').onclick = () => document.getElementById('privacy-modal').classList.add('hidden');

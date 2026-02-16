@@ -13,13 +13,15 @@ export class TabManager {
         this._saveSessionDebounce = null;
     }
 
-    createTab(url = 'ntp.html', options = { active: true }) {
+    createTab(url = 'ntp.html', options = { active: true, incognito: false }) {
         const id = crypto.randomUUID ? crypto.randomUUID().substring(0, 8) : Math.random().toString(36).substr(2, 9);
         const webview = document.createElement('webview');
+        const isIncognito = options?.incognito === true;
 
         // Ensure URL is valid (simple check)
         if (!url) url = 'ntp.html';
 
+        if (isIncognito) webview.setAttribute('partition', 'incognito');
         webview.src = url;
         webview.setAttribute('allowpopups', '');
         webview.setAttribute('webpreferences', 'contextIsolation=true, sandbox=true');
@@ -27,11 +29,12 @@ export class TabManager {
         webview.className = 'browser-webview';
 
         const tabEl = document.createElement('div');
-        tabEl.className = 'tab loading';
+        tabEl.className = `tab loading${isIncognito ? ' incognito' : ''}`;
         tabEl.id = `tab-${id}`;
         tabEl.draggable = true;
         tabEl.innerHTML = `
             <div class="tab-spinner"></div>
+            <span class="tab-incognito" title="Incognito" aria-label="Incognito" style="display:none;">🕶</span>
             <img class="tab-icon" src="" style="display:none" />
             <span class="tab-title">Loading...</span>
             <span class="tab-audio-indicator" style="display:none">🔊</span>
@@ -40,7 +43,7 @@ export class TabManager {
         this.webviewContainer.appendChild(webview);
         this.tabsContainer.appendChild(tabEl);
 
-        const tabData = { id, tabEl, webviewEl: webview, pinned: false, muted: false };
+        const tabData = { id, tabEl, webviewEl: webview, pinned: false, muted: false, incognito: isIncognito };
         this.tabs.push(tabData);
         this.zoomLevels[id] = 1.0;
 
@@ -131,7 +134,7 @@ export class TabManager {
                             iconEl.onerror = () => { iconEl.style.display = 'none'; };
                         }
                     } catch (_) { }
-                    if (this.callbacks.onLogHistory) this.callbacks.onLogHistory(title, url);
+                    if (!tab.incognito && this.callbacks.onLogHistory) this.callbacks.onLogHistory(title, url);
                 }
             } catch (e) { }
         });
@@ -179,7 +182,7 @@ export class TabManager {
         const immediate = options === true || options?.immediate === true;
         const run = () => {
             try {
-                const tabs = this.tabs.map(t => {
+                const tabs = this.tabs.filter(t => !t.incognito).map(t => {
                     try { return t.webviewEl.getURL(); } catch (_) { return null; }
                 }).filter(Boolean);
                 this.callbacks.onSaveSession(tabs);
@@ -223,7 +226,7 @@ export class TabManager {
             const url = tab.webviewEl.getURL();
             const title = tab.webviewEl.getTitle();
             if (url) {
-                this.closedTabs.push({ url, title: title || url, time: Date.now() });
+                this.closedTabs.push({ url, title: title || url, time: Date.now(), incognito: !!tab.incognito });
                 if (this.closedTabs.length > 30) this.closedTabs.splice(0, this.closedTabs.length - 30);
             }
         } catch (_) { }
@@ -248,7 +251,7 @@ export class TabManager {
     reopenClosedTab() {
         const last = this.closedTabs.pop();
         if (!last?.url) return false;
-        this.createTab(last.url, { active: true });
+        this.createTab(last.url, { active: true, incognito: !!last.incognito });
         return true;
     }
 
@@ -269,7 +272,7 @@ export class TabManager {
     duplicateTab(id) {
         const tab = this.tabs.find(t => t.id === id);
         if (!tab) return;
-        try { this.createTab(tab.webviewEl.getURL()); } catch (_) { this.createTab(); }
+        try { this.createTab(tab.webviewEl.getURL(), { active: true, incognito: !!tab.incognito }); } catch (_) { this.createTab(); }
     }
 
     pinTab(id) {

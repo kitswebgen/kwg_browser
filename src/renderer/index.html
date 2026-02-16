@@ -352,6 +352,47 @@
                 <div class="setting-group">
                     <h3>Performance</h3>
                     <button id="clear-cache-btn" class="kits-btn secondary">Clear Cache</button>
+                    <button id="open-clear-data-btn" class="kits-btn secondary" style="margin-left:8px;">Clear Browsing Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear Browsing Data Modal -->
+    <div id="clear-data-modal" class="modal hidden">
+        <div class="modal-content glass" style="width:460px;">
+            <div class="modal-header">
+                <h2>Clear browsing data</h2>
+                <button id="close-clear-data" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group" style="margin-bottom:18px;">
+                    <h3>Choose what to clear</h3>
+                    <div class="setting-item">
+                        <span>Browsing history</span>
+                        <input type="checkbox" id="clear-data-history" checked>
+                    </div>
+                    <div class="setting-item">
+                        <span>Cached images and files</span>
+                        <input type="checkbox" id="clear-data-cache" checked>
+                    </div>
+                    <div class="setting-item">
+                        <span>Cookies and site data</span>
+                        <input type="checkbox" id="clear-data-cookies" checked>
+                    </div>
+                    <div class="setting-item">
+                        <span>Download history</span>
+                        <input type="checkbox" id="clear-data-downloads">
+                    </div>
+                    <div class="setting-item">
+                        <span>Bookmarks</span>
+                        <input type="checkbox" id="clear-data-bookmarks">
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button id="clear-data-cancel" class="kits-btn secondary">Cancel</button>
+                    <button id="clear-data-confirm" class="kits-btn danger">Clear data</button>
                 </div>
             </div>
         </div>
@@ -495,11 +536,14 @@
     <!-- App Menu -->
     <div id="app-menu" class="app-menu hidden">
         <div class="app-menu-item" data-action="new-tab">New Tab <kbd>Ctrl+T</kbd></div>
+        <div class="app-menu-item" data-action="new-incognito-tab">New Incognito Tab <kbd>Ctrl+Shift+N</kbd></div>
         <div class="app-menu-item" data-action="reopen-closed">Reopen Closed Tab <kbd>Ctrl+Shift+T</kbd></div>
         <div class="app-menu-sep"></div>
         <div class="app-menu-item" data-action="history">History</div>
         <div class="app-menu-item" data-action="bookmarks">Bookmarks</div>
         <div class="app-menu-item" data-action="downloads">Downloads</div>
+        <div class="app-menu-sep"></div>
+        <div class="app-menu-item" data-action="clear-browsing-data">Clear Browsing Data <kbd>Ctrl+Shift+Del</kbd></div>
         <div class="app-menu-sep"></div>
         <div class="app-menu-item" data-action="privacy">Privacy Dashboard</div>
         <div class="app-menu-item" data-action="settings">Settings</div>

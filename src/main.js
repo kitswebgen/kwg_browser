@@ -458,7 +458,10 @@ const template = [
     {
         label: 'File', submenu: [
             { label: 'New Tab', accelerator: 'CmdOrCtrl+T', click: () => mainWindow?.webContents.send('menu-action', 'new-tab') },
+            { label: 'New Incognito Tab', accelerator: 'CmdOrCtrl+Shift+N', click: () => mainWindow?.webContents.send('menu-action', 'new-incognito-tab') },
             { label: 'New Window', accelerator: 'CmdOrCtrl+N', click: () => createWindow() },
+            { type: 'separator' },
+            { label: 'Clear Browsing Data', accelerator: 'CmdOrCtrl+Shift+Delete', click: () => mainWindow?.webContents.send('menu-action', 'clear-browsing-data') },
             { type: 'separator' },
             { label: 'Print', accelerator: 'CmdOrCtrl+P', click: () => mainWindow?.webContents.send('menu-action', 'print') },
             { type: 'separator' },
@@ -713,14 +716,39 @@ ipcMain.handle('capture-page', async () => {
     } catch (e) { log.error('[Capture]', e.message); return null; }
 });
 
-ipcMain.handle('clear-cache-production', async () => {
+ipcMain.handle('clear-cache-production', async (_event, options = {}) => {
     try {
+        const opts = (options && typeof options === 'object') ? options : {};
+        const clearCache = opts.cache !== false;
+        const clearStorage = opts.storage === true;
         const ses = session.fromPartition('persist:kits-browser');
-        await ses.clearCache();
-        await ses.clearStorageData();
-        log.info('[Cache] Cleared');
+        if (clearCache) await ses.clearCache();
+        if (clearStorage) await ses.clearStorageData();
+        log.info(`[Cache] Cleared (cache=${clearCache} storage=${clearStorage})`);
         return true;
     } catch (e) { log.error('[Cache]', e.message); return false; }
+});
+
+ipcMain.handle('clear-site-data-production', async (_event, options = {}) => {
+    try {
+        const opts = (options && typeof options === 'object') ? options : {};
+        const storages = [];
+        if (opts.cookies) storages.push('cookies');
+        if (opts.cacheStorage) storages.push('cachestorage');
+        if (opts.serviceWorkers) storages.push('serviceworkers');
+        if (opts.localStorage) storages.push('localstorage');
+        if (opts.indexedDB) storages.push('indexdb');
+        if (opts.webSQL) storages.push('websql');
+
+        if (storages.length === 0) return true;
+        const ses = session.fromPartition('persist:kits-browser');
+        await ses.clearStorageData({ storages });
+        log.info(`[SiteData] Cleared: ${storages.join(', ')}`);
+        return true;
+    } catch (e) {
+        log.error('[SiteData]', e.message);
+        return false;
+    }
 });
 
 // Store access
