@@ -71,8 +71,9 @@
                 </button>
             </div>
 
-            <div class="omnibox-container" style="position: relative;">
-                <!-- Secure Icon Removed -->
+            <div class="omnibox-container">
+                <button id="secure-icon" class="secure-icon" type="button" title="Site security"
+                    aria-label="Site security"></button>
                 <input type="text" id="omnibox" placeholder="Search Google or type a URL" autocomplete="off" />
                 <button id="bookmark-btn" class="icon-btn" title="Bookmark this page">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -112,7 +113,7 @@
                         <circle cx="12" cy="7" r="4"></circle>
                     </svg>
                 </button>
-                <button id="menu-btn">
+                <button id="menu-btn" title="Menu" aria-label="Menu">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="1"></circle>
                         <circle cx="12" cy="5" r="1"></circle>
@@ -331,6 +332,14 @@
                     </select>
                 </div>
                 <div class="setting-group">
+                    <h3>Appearance</h3>
+                    <select id="theme-select" class="kits-select">
+                        <option value="system">System</option>
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                    </select>
+                </div>
+                <div class="setting-group">
                     <h3>Experimental Features</h3>
                     <div class="setting-item">
                         <span>High-Speed Rendering</span>
@@ -368,14 +377,15 @@
                     <span style="font-size:36px; font-weight:700; color:#FBBC05;">T</span>
                     <span style="font-size:36px; font-weight:700; color:#34A853;">S</span>
                 </div>
-                <h2 style="font-size:22px; font-weight:400; margin-bottom:8px; color:var(--md-sys-color-on-surface);">
+                <h2 id="login-title"
+                    style="font-size:22px; font-weight:400; margin-bottom:8px; color:var(--md-sys-color-on-surface);">
                     Sign in</h2>
-                <p style="font-size:14px; opacity:0.6; margin-bottom:28px;">Use your KITS Account to sync bookmarks,
-                    history &amp; settings</p>
+                <p id="login-subtitle" style="font-size:14px; opacity:0.6; margin-bottom:28px;">Use your KITS Account
+                    to sync bookmarks, history &amp; settings</p>
             </div>
 
             <div style="padding:0 40px 36px;">
-                <div style="margin-bottom:16px;">
+                <div id="login-name-row" style="margin-bottom:16px;">
                     <label
                         style="font-size:11px; color:var(--md-sys-color-primary); display:block; margin-bottom:4px; font-weight:500;">Display
                         Name</label>
@@ -487,6 +497,23 @@
         <div class="ctx-item danger" data-action="close-tab">✕ Close Tab</div>
     </div>
 
+    <!-- App Menu -->
+    <div id="app-menu" class="app-menu hidden">
+        <div class="app-menu-item" data-action="new-tab">New Tab <kbd>Ctrl+T</kbd></div>
+        <div class="app-menu-item" data-action="reopen-closed">Reopen Closed Tab <kbd>Ctrl+Shift+T</kbd></div>
+        <div class="app-menu-sep"></div>
+        <div class="app-menu-item" data-action="history">History</div>
+        <div class="app-menu-item" data-action="bookmarks">Bookmarks</div>
+        <div class="app-menu-item" data-action="downloads">Downloads</div>
+        <div class="app-menu-sep"></div>
+        <div class="app-menu-item" data-action="privacy">Privacy Dashboard</div>
+        <div class="app-menu-item" data-action="settings">Settings</div>
+        <div class="app-menu-item" data-action="screenshot">Screenshot</div>
+        <div class="app-menu-sep"></div>
+        <div class="app-menu-item" data-action="about">About</div>
+        <div class="app-menu-item" data-action="system-info">System Info</div>
+    </div>
+
     <!-- Security Warning Banner -->
     <div id="security-banner" class="security-banner hidden">
         <span id="security-banner-icon">⚠️</span>
@@ -514,6 +541,25 @@
                 <button id="close-sysinfo" class="close-btn">&times;</button>
             </div>
             <div id="sysinfo-content" style="font-size:13px; line-height:2;"></div>
+        </div>
+    </div>
+
+    <!-- Downloads Modal -->
+    <div id="downloads-modal" class="modal hidden">
+        <div class="modal-content glass" style="width:680px; max-height:85vh; overflow-y:auto;">
+            <div class="modal-header">
+                <h2>Downloads</h2>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button id="downloads-clear-btn" class="kits-btn secondary"
+                        style="padding:6px 12px; border-radius:10px; cursor:pointer;">Clear</button>
+                    <button id="close-downloads" class="close-btn">&times;</button>
+                </div>
+            </div>
+            <div style="padding:0 16px 16px;">
+                <input type="text" id="downloads-search" class="kits-input" placeholder="Search downloads..."
+                    style="width:100%; margin:6px 0 12px;">
+                <div id="downloads-list" class="downloads-list"></div>
+            </div>
         </div>
     </div>
 
@@ -587,44 +633,6 @@
     </div>
 
     <script type="module" src="renderer.js"></script>
-    <!-- AI Hub Menu -->
-    <div id="ai-hub-menu" class="hidden">
-        <div class="ai-menu-item" data-url="https://chatgpt.com">
-            <span class="ai-icon">🤖</span>
-            <div class="ai-info">
-                <div class="ai-name">ChatGPT</div>
-                <div class="ai-desc">OpenAI's assistant</div>
-            </div>
-        </div>
-        <div class="ai-menu-item" data-url="https://gemini.google.com">
-            <span class="ai-icon">✨</span>
-            <div class="ai-info">
-                <div class="ai-name">Gemini</div>
-                <div class="ai-desc">Google's advanced AI</div>
-            </div>
-        </div>
-        <div class="ai-menu-item" data-url="https://claude.ai">
-            <span class="ai-icon">🧠</span>
-            <div class="ai-info">
-                <div class="ai-name">Claude</div>
-                <div class="ai-desc">Anthropic's helper</div>
-            </div>
-        </div>
-        <div class="ai-menu-item" data-url="https://copilot.microsoft.com">
-            <span class="ai-icon">✈️</span>
-            <div class="ai-info">
-                <div class="ai-name">Copilot</div>
-                <div class="ai-desc">Microsoft AI</div>
-            </div>
-        </div>
-        <div class="ai-menu-item" data-url="https://perplexity.ai">
-            <span class="ai-icon">🔍</span>
-            <div class="ai-info">
-                <div class="ai-name">Perplexity</div>
-                <div class="ai-desc">AI Search Engine</div>
-            </div>
-        </div>
-    </div>
 </body>
 
 </html>

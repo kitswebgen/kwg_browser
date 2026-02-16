@@ -40,6 +40,21 @@
     color: var(--md-sys-color-on-primary);
 }
 
+:focus-visible {
+    outline: none;
+}
+
+button:focus-visible,
+.icon-btn:focus-visible,
+.secure-icon:focus-visible,
+.kits-btn:focus-visible,
+.close-btn:focus-visible,
+.download-action:focus-visible,
+.win-btn:focus-visible,
+.bookmarks-bar-item:focus-visible {
+    box-shadow: 0 0 0 2px var(--sys-focus-ring);
+}
+
 /* Global Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 10px;
@@ -93,6 +108,56 @@
     }
 }
 
+/* Manual theme override (Settings → Appearance) */
+:root[data-theme="dark"] {
+    --md-sys-color-background: #1E1F22;
+    --md-sys-color-surface: #2B2D31;
+    --md-sys-color-surface-container: #383A40;
+    --md-sys-color-primary: #A8C7FA;
+    --md-sys-color-on-primary: #003355;
+    --md-sys-color-secondary-container: #004A77;
+    --md-sys-color-on-surface: #E3E3E3;
+    --md-sys-color-on-surface-variant: #C4C7C5;
+    --md-sys-color-outline: #8E918F;
+
+    --sys-glass-bg: rgba(30, 31, 35, 0.7);
+    --sys-glass-element: rgba(255, 255, 255, 0.10);
+    --sys-glass-border: rgba(255, 255, 255, 0.08);
+    --sys-glass-highlight: rgba(255, 255, 255, 0.05);
+    --sys-glass-shadow: rgba(0, 0, 0, 0.30);
+    --sys-elevation-shadow: 0 4px 20px rgba(0, 0, 0, 0.40);
+    --sys-focus-ring: rgba(168, 199, 250, 0.40);
+}
+
+:root[data-theme="light"] {
+    --md-sys-color-background: #F3F3F3;
+    --md-sys-color-surface: #FFFFFF;
+    --md-sys-color-surface-container: #E3E3E3;
+    --md-sys-color-primary: #0B57D0;
+    --md-sys-color-on-primary: #FFFFFF;
+    --md-sys-color-secondary-container: #D3E3FD;
+    --md-sys-color-on-surface: #1F1F1F;
+    --md-sys-color-on-surface-variant: #444746;
+    --md-sys-color-outline: #747775;
+
+    --sys-glass-bg: rgba(245, 245, 245, 0.70);
+    --sys-glass-element: rgba(0, 0, 0, 0.06);
+    --sys-glass-border: rgba(0, 0, 0, 0.08);
+    --sys-glass-highlight: rgba(0, 0, 0, 0.03);
+    --sys-glass-shadow: rgba(0, 0, 0, 0.10);
+    --sys-elevation-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    --sys-focus-ring: rgba(11, 87, 208, 0.30);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
 /* Zen Mode */
 body.zen-mode #titleapi,
 body.zen-mode .browser-chrome {
@@ -143,6 +208,19 @@ body.zen-mode .browser-chrome {
     user-select: none;
     font-family: 'Google Sans', 'Roboto', 'Segoe UI', sans-serif;
     /* Try Google Sans if installed */
+}
+
+input,
+textarea,
+[contenteditable="true"],
+#omnibox,
+#ai-input,
+#find-input,
+.chat-container,
+.chat-message,
+#notification,
+#notification-msg {
+    user-select: text;
 }
 
 body {
@@ -268,6 +346,11 @@ body {
     color: var(--md-sys-color-on-surface);
     box-shadow: 0 2px 6px var(--sys-glass-shadow), 0 0 0 1px var(--sys-glass-border);
     border: 1px solid transparent;
+}
+
+.tab.dragging {
+    opacity: 0.65;
+    transform: scale(0.98);
 }
 
 .tab-icon {
@@ -403,6 +486,7 @@ body {
     background-color: var(--md-sys-color-background);
     /* Darker inside the pill */
     border-radius: var(--radius-full);
+    position: relative;
     display: flex;
     align-items: center;
     padding: 0 16px;
@@ -430,6 +514,43 @@ body {
     outline: none;
     font-size: 14px;
     line-height: 20px;
+}
+
+.secure-icon {
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    color: var(--md-sys-color-on-surface-variant);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.secure-icon:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--md-sys-color-on-surface);
+}
+
+.secure-icon:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--sys-focus-ring);
+}
+
+.secure-icon[data-state="secure"] {
+    color: #81C995;
+}
+
+.secure-icon[data-state="warning"] {
+    color: #FEBC2E;
+}
+
+.secure-icon[data-state="neutral"] {
+    color: var(--md-sys-color-on-surface-variant);
 }
 
 .suggestions-list {
@@ -1048,6 +1169,7 @@ kbd {
     position: fixed;
     bottom: 40px;
     right: 16px;
+    cursor: pointer;
     background: var(--sys-glass-bg);
     backdrop-filter: blur(20px);
     border: 1px solid var(--sys-glass-border);
@@ -1120,6 +1242,121 @@ kbd {
     color: var(--md-sys-color-on-surface-variant);
 }
 
+/* --- Downloads Modal --- */
+.downloads-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.download-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.download-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(168, 199, 250, 0.25);
+    transform: translateY(-1px);
+}
+
+.download-item .d-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex: 0 0 auto;
+    font-size: 16px;
+}
+
+.download-item .d-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.download-item .d-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--md-sys-color-on-surface);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.download-item .d-sub {
+    font-size: 11px;
+    color: var(--md-sys-color-on-surface-variant);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.9;
+}
+
+.download-item .d-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+
+.download-action {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--md-sys-color-on-surface);
+    padding: 6px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+}
+
+.download-action:hover {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(168, 199, 250, 0.25);
+}
+
+.download-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--md-sys-color-on-surface-variant);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.download-badge.completed {
+    color: #81C995;
+    border-color: rgba(129, 201, 149, 0.35);
+    background: rgba(129, 201, 149, 0.08);
+}
+
+.download-badge.interrupted,
+.download-badge.cancelled {
+    color: #FEBC2E;
+    border-color: rgba(254, 188, 46, 0.35);
+    background: rgba(254, 188, 46, 0.08);
+}
+
+.download-badge.failed {
+    color: #EA4335;
+    border-color: rgba(234, 67, 53, 0.35);
+    background: rgba(234, 67, 53, 0.08);
+}
+
 /* --- Login Inputs --- */
 .kits-input {
     width: 100%;
@@ -1163,6 +1400,15 @@ kbd {
 .icon-btn:hover {
     color: var(--md-sys-color-primary);
     background: rgba(255, 255, 255, 0.08);
+}
+
+.icon-btn.bookmarked {
+    color: var(--md-sys-color-primary);
+    background: rgba(168, 199, 250, 0.12);
+}
+
+.icon-btn.bookmarked svg {
+    fill: currentColor;
 }
 
 /* --- Close Button (modal) --- */
@@ -1344,6 +1590,51 @@ body.zen-mode .main-content {
 
 .tab-context-menu.hidden {
     display: none;
+}
+
+.app-menu {
+    position: fixed;
+    background: rgba(35, 37, 41, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 14px;
+    padding: 6px;
+    z-index: 9999;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    min-width: 240px;
+    animation: modalPop 0.15s ease;
+}
+
+.app-menu.hidden {
+    display: none;
+}
+
+.app-menu-item {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--md-sys-color-on-surface);
+    transition: background 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.app-menu-item kbd {
+    opacity: 0.6;
+    font-size: 11px;
+}
+
+.app-menu-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.app-menu-sep {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+    margin: 4px 8px;
 }
 
 .ctx-item {

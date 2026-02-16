@@ -35,6 +35,17 @@ const TM = new TabManager(tabsContainer, webviewContainer, {
         if (muteItem) muteItem.textContent = tab.muted ? '🔊 Unmute Tab' : '🔇 Mute Tab';
 
         ctxMenu.classList.remove('hidden');
+
+        // Clamp to viewport after it becomes visible.
+        requestAnimationFrame(() => {
+            const rect = ctxMenu.getBoundingClientRect();
+            let left = e.clientX;
+            let top = e.clientY;
+            if (rect.right > window.innerWidth) left = Math.max(8, window.innerWidth - rect.width - 8);
+            if (rect.bottom > window.innerHeight) top = Math.max(8, window.innerHeight - rect.height - 8);
+            ctxMenu.style.left = `${left}px`;
+            ctxMenu.style.top = `${top}px`;
+        });
     },
     onLoadingStart: () => {
         const pageProgress = document.getElementById('page-progress');
@@ -70,6 +81,202 @@ const TM = new TabManager(tabsContainer, webviewContainer, {
 // Link UI with TM
 UI.TM = TM;
 
+function setupTabContextMenu() {
+    const ctxMenu = document.getElementById('tab-context-menu');
+    if (!ctxMenu) return;
+
+    const hide = () => ctxMenu.classList.add('hidden');
+
+    ctxMenu.addEventListener('click', (e) => {
+        const item = e.target.closest('.ctx-item');
+        if (!item) return;
+        const action = item.getAttribute('data-action');
+        const tabId = TM.contextTabId || TM.activeTabId;
+        if (!tabId) return hide();
+
+        switch (action) {
+            case 'reload-tab': {
+                const tab = TM.tabs.find(t => t.id === tabId);
+                try { tab?.webviewEl?.reload(); } catch (_) { }
+                break;
+            }
+            case 'duplicate-tab': TM.duplicateTab(tabId); break;
+            case 'pin-tab': TM.pinTab(tabId); break;
+            case 'mute-tab': TM.muteTab(tabId); break;
+            case 'close-other': TM.closeOtherTabs(tabId); break;
+            case 'close-right': TM.closeTabsToRight(tabId); break;
+            case 'close-tab': TM.closeTab(tabId); break;
+        }
+        hide();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (ctxMenu.classList.contains('hidden')) return;
+        if (ctxMenu.contains(e.target)) return;
+        hide();
+    });
+
+    window.addEventListener('blur', hide);
+    window.addEventListener('resize', hide);
+    window.addEventListener('scroll', hide, true);
+}
+
+function setupNetworkStatusToast() {
+    const toast = document.getElementById('network-status-toast');
+    const icon = document.getElementById('network-status-icon');
+    const msg = document.getElementById('network-status-msg');
+    if (!toast || !icon || !msg) return;
+
+    let t = null;
+    const show = (online, opts = {}) => {
+        clearTimeout(t);
+        icon.textContent = online ? '🟢' : '🔴';
+        msg.textContent = online ? 'Online' : 'Offline';
+        toast.classList.remove('hidden');
+        const autoHide = opts.autoHide ?? true;
+        const duration = opts.duration ?? 3000;
+        if (autoHide) t = setTimeout(() => toast.classList.add('hidden'), duration);
+    };
+
+    window.addEventListener('online', () => show(true));
+    window.addEventListener('offline', () => show(false, { autoHide: false }));
+
+    // Initial state: only show if offline.
+    if (window.electronAPI?.getNetworkStatus) {
+        window.electronAPI.getNetworkStatus()
+            .then((s) => { if (s && s.online === false) show(false, { autoHide: false }); })
+            .catch(() => { });
+    } else if (navigator.onLine === false) {
+        show(false, { autoHide: false });
+    }
+
+    toast.addEventListener('click', () => toast.classList.add('hidden'));
+}
+
+function setupLoginModal() {
+    const modal = document.getElementById('login-modal');
+    if (!modal) return;
+
+    const titleEl = document.getElementById('login-title');
+    const subtitleEl = document.getElementById('login-subtitle');
+    const nameRow = document.getElementById('login-name-row');
+    const nameInput = document.getElementById('login-name');
+    const emailInput = document.getElementById('login-email');
+    const passInput = document.getElementById('login-password');
+    const errorEl = document.getElementById('login-error');
+    const toggleBtn = document.getElementById('login-signup-btn');
+    const submitBtn = document.getElementById('login-submit-btn');
+    const closeBtn = document.getElementById('close-login');
+    const googleBtn = document.getElementById('google-search-btn');
+
+    let mode = 'signin';
+
+    const showError = (msg) => {
+        if (!errorEl) return;
+        errorEl.textContent = msg || '';
+        errorEl.style.display = msg ? 'block' : 'none';
+    };
+
+    const setMode = (next) => {
+        mode = next;
+        const isSignup = mode === 'signup';
+        if (nameRow) nameRow.style.display = isSignup ? '' : 'none';
+        if (titleEl) titleEl.textContent = isSignup ? 'Create account' : 'Sign in';
+        if (subtitleEl) subtitleEl.textContent = isSignup
+            ? 'Create a KITS Account to sync bookmarks, history & settings'
+            : 'Use your KITS Account to sync bookmarks, history & settings';
+        if (submitBtn) submitBtn.textContent = isSignup ? 'Create account' : 'Sign In';
+        if (toggleBtn) toggleBtn.textContent = isSignup ? 'Use existing account' : 'Create account';
+        showError('');
+    };
+
+    const open = (nextMode = 'signin') => {
+        setMode(nextMode);
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            if (mode === 'signup') nameInput?.focus();
+            else emailInput?.focus();
+        }, 0);
+    };
+
+    const close = () => {
+        modal.classList.add('hidden');
+        showError('');
+        if (passInput) passInput.value = '';
+    };
+
+    closeBtn?.addEventListener('click', close);
+    toggleBtn?.addEventListener('click', () => setMode(mode === 'signin' ? 'signup' : 'signin'));
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) close();
+    });
+
+    googleBtn?.addEventListener('click', () => {
+        close();
+        TM.createTab('https://www.google.com', { active: true });
+    });
+
+    const submit = async () => {
+        showError('');
+        if (!window.electronAPI) {
+            showError('Sign-in is unavailable in this build.');
+            return;
+        }
+
+        const name = nameInput?.value?.trim() || '';
+        const email = emailInput?.value?.trim() || '';
+        const password = passInput?.value || '';
+
+        if (mode === 'signup' && name.length < 2) return showError('Name must be at least 2 characters.');
+        if (!email.includes('@')) return showError('Enter a valid email.');
+        if (password.length < 4) return showError('Password must be at least 4 characters.');
+
+        try {
+            submitBtn.disabled = true;
+            const result = mode === 'signup'
+                ? await PM.signup(name, email, password)
+                : await PM.login(email, password);
+
+            if (!result?.ok) {
+                showError(result?.msg || 'Sign-in failed.');
+                return;
+            }
+
+            close();
+            UI.showNotification(mode === 'signup' ? '✅ Account created' : '✅ Signed in');
+        } catch (e) {
+            showError('Sign-in failed. Please try again.');
+        } finally {
+            submitBtn.disabled = false;
+        }
+    };
+
+    submitBtn?.addEventListener('click', submit);
+    [nameInput, emailInput, passInput].forEach((el) => {
+        el?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submit();
+        });
+    });
+
+    // Expose for other UI entry points.
+    window.openLoginModal = open;
+    window.closeLoginModal = close;
+
+    // Default state
+    setMode('signin');
+}
+
+setupTabContextMenu();
+setupNetworkStatusToast();
+setupLoginModal();
+
+// User button: opens profile/settings or login.
+document.getElementById('user-btn')?.addEventListener('click', () => {
+    if (PM.isLoggedIn()) document.getElementById('settings-modal')?.classList.remove('hidden');
+    else window.openLoginModal?.('signin') || document.getElementById('login-modal')?.classList.remove('hidden');
+});
+
 // Helpers
 function renderProfileSection(profile) {
     const section = document.getElementById('profile-section');
@@ -101,7 +308,8 @@ function renderProfileSection(profile) {
         if (item) {
             item.onclick = () => {
                 document.getElementById('settings-modal').classList.add('hidden');
-                document.getElementById('login-modal').classList.remove('hidden');
+                if (window.openLoginModal) window.openLoginModal('signin');
+                else document.getElementById('login-modal').classList.remove('hidden');
             };
         }
         if (userBtn) userBtn.style.color = '';
@@ -228,6 +436,7 @@ if (window.electronAPI) {
         if (data.status === 'completed' || data.status === 'interrupted' || data.status === 'cancelled') {
             setTimeout(() => toast.classList.add('hidden'), 4000);
         }
+        UI.refreshDownloadsIfOpen?.();
     });
 
     window.electronAPI.onPowerEvent((data) => {

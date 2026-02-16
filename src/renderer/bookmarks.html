@@ -213,22 +213,43 @@
 
                 const card = document.createElement('div');
                 card.className = 'bookmark-card';
-                card.innerHTML = `
-                    <div class="icon-box">
-                        <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" width="28" height="28" 
-                             onerror="this.style.display='none'; this.parentElement.textContent='${bm.title[0] || 'B'}'">
-                    </div>
-                    <div class="title">${bm.title}</div>
-                    <div class="url">${domain}</div>
-                    <div class="delete-btn" onclick="deleteBookmark(event, ${index})">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </div>
-                `;
+
+                const iconBox = document.createElement('div');
+                iconBox.className = 'icon-box';
+                const img = document.createElement('img');
+                img.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+                img.width = 28;
+                img.height = 28;
+                img.onerror = () => {
+                    img.style.display = 'none';
+                    iconBox.textContent = String(bm.title || 'B').charAt(0).toUpperCase() || 'B';
+                };
+                iconBox.appendChild(img);
+
+                const title = document.createElement('div');
+                title.className = 'title';
+                title.textContent = bm.title || 'Untitled';
+
+                const url = document.createElement('div');
+                url.className = 'url';
+                url.textContent = domain;
+
+                const del = document.createElement('div');
+                del.className = 'delete-btn';
+                del.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>`;
+                del.addEventListener('click', (e) => window.deleteBookmark(e, index));
+
+                card.appendChild(iconBox);
+                card.appendChild(title);
+                card.appendChild(url);
+                card.appendChild(del);
+
                 card.onclick = (e) => {
-                    if (!e.target.closest('.delete-btn')) window.location.href = bm.url;
+                    if (!e.target.closest('.delete-btn')) window.location.href = String(bm.url || '');
                 };
                 container.appendChild(card);
             });

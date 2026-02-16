@@ -8,6 +8,7 @@ const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
+const https = require('https');
 
 // --- Advanced Packages ---
 const Store = require('electron-store');
@@ -385,12 +386,14 @@ function createWindow() {
             const total = item.getTotalBytes();
             const received = item.getReceivedBytes();
             const progress = total > 0 ? (received / total) * 100 : 0;
-            const speed = received > 0 ? (received / (Date.now() - item.getStartTime())) : 0;
+            const startMs = (item.getStartTime() || 0) * 1000;
+            const elapsedMs = Math.max(1, Date.now() - startMs);
+            const speedBps = Math.max(0, received / (elapsedMs / 1000));
             mainWindow?.webContents.send('download-status', {
                 id: downloadId,
                 status: state === 'interrupted' ? 'interrupted' : (item.isPaused() ? 'paused' : 'downloading'),
                 filename, progress, received, total,
-                speed: Math.round(speed * 1000),
+                speed: Math.round(speedBps),
                 isDangerous
             });
         });
@@ -617,6 +620,65 @@ ipcMain.handle('ai-chat', async (event, prompt) => {
     if (lower.includes('help')) return 'I can: summarize pages, answer questions, help with research. Shortcuts: Ctrl+J (AI panel), Ctrl+K (commands), Ctrl+F (find), Ctrl+D (bookmark).';
     if (lower.includes('shortcut') || lower.includes('keyboard')) return 'Shortcuts:\n• Ctrl+T — New tab\n• Ctrl+W — Close tab\n• Ctrl+L — Focus URL bar\n• Ctrl+F — Find in page\n• Ctrl+D — Bookmark\n• Ctrl+J — AI Panel\n• Ctrl+K — Command Palette\n• Ctrl+Shift+S — Screenshot\n• F11 — Fullscreen\n• F12 — DevTools';
     return `KITS AI: I've processed your query about "${p}". How else can I assist?`;
+});
+
+function fetchJson(url, timeoutMs = 2500) {
+    return new Promise((resolve, reject) => {
+        const req = https.get(url, { headers: { 'User-Agent': userAgent } }, (res) => {
+            const status = res.statusCode || 0;
+            if (status < 200 || status >= 300) {
+                res.resume();
+                return reject(new Error(`HTTP ${status}`));
+            }
+            let raw = '';
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                raw += chunk;
+                if (raw.length > 1024 * 1024) {
+                    req.destroy(new Error('Response too large'));
+                }
+            });
+            res.on('end', () => {
+                try { resolve(JSON.parse(raw)); }
+                catch (e) { reject(e); }
+            });
+        });
+        req.on('error', reject);
+        req.setTimeout(timeoutMs, () => req.destroy(new Error('timeout')));
+    });
+}
+
+ipcMain.handle('search-suggestions', async (event, query, engine = 'google') => {
+    try {
+        const q = sanitize(String(query || '').trim()).slice(0, 120);
+        if (q.length < 2) return [];
+
+        const eng = String(engine || 'google').toLowerCase();
+        // DuckDuckGo uses a different response shape: [{ phrase: "..." }, ...]
+        if (eng === 'duckduckgo') {
+            const url = `https://duckduckgo.com/ac/?q=${encodeURIComponent(q)}&type=list`;
+            const data = await fetchJson(url);
+            if (!Array.isArray(data)) return [];
+            return data
+                .map(item => item?.phrase)
+                .filter(s => typeof s === 'string' && s.trim().length > 0)
+                .slice(0, 8);
+        }
+
+        // Bing/Google-style: [query, [suggestions...], ...]
+        const url = eng === 'bing'
+            ? `https://api.bing.com/osjson.aspx?query=${encodeURIComponent(q)}`
+            : `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(q)}`;
+
+        const data = await fetchJson(url);
+        if (!Array.isArray(data)) return [];
+        const suggestions = Array.isArray(data[1]) ? data[1] : [];
+        return suggestions
+            .filter(s => typeof s === 'string' && s.trim().length > 0)
+            .slice(0, 8);
+    } catch (e) {
+        return [];
+    }
 });
 
 ipcMain.handle('automate-web', async () => ({ success: false, message: 'Web automation coming soon.' }));

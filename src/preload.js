@@ -60,5 +60,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getNetworkStatus: () => ipcRenderer.invoke('get-network-status'),
 
     // Power Status
-    getPowerStatus: () => ipcRenderer.invoke('get-power-status')
+    getPowerStatus: () => ipcRenderer.invoke('get-power-status'),
+
+    // Search suggestions (omnibox)
+    getSearchSuggestions: (query, engine) => ipcRenderer.invoke('search-suggestions', query, engine)
 });

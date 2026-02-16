@@ -7,6 +7,8 @@ export class TabManager {
         this.activeTabId = null;
         this.zoomLevels = {};
         this.contextTabId = null;
+        this.closedTabs = [];
+        this.draggingTabId = null;
         this.callbacks = callbacks; // onUpdateUI, onSaveSession, onError, etc.
     }
 
@@ -26,6 +28,7 @@ export class TabManager {
         const tabEl = document.createElement('div');
         tabEl.className = 'tab loading';
         tabEl.id = `tab-${id}`;
+        tabEl.draggable = true;
         tabEl.innerHTML = `
             <div class="tab-spinner"></div>
             <img class="tab-icon" src="" style="display:none" />
@@ -60,6 +63,33 @@ export class TabManager {
             e.preventDefault();
             this.contextTabId = tab.id;
             if (this.callbacks.onContextMenu) this.callbacks.onContextMenu(e, tab);
+        });
+
+        // Drag-to-reorder tabs (unpinned only)
+        tab.tabEl.addEventListener('dragstart', (e) => {
+            if (tab.pinned) { e.preventDefault(); return; }
+            this.draggingTabId = tab.id;
+            tab.tabEl.classList.add('dragging');
+            try {
+                e.dataTransfer.setData('text/plain', tab.id);
+                e.dataTransfer.effectAllowed = 'move';
+            } catch (_) { }
+        });
+        tab.tabEl.addEventListener('dragend', () => {
+            this.draggingTabId = null;
+            tab.tabEl.classList.remove('dragging');
+        });
+        tab.tabEl.addEventListener('dragover', (e) => {
+            if (!this.draggingTabId || this.draggingTabId === tab.id) return;
+            const dragging = this.tabs.find(t => t.id === this.draggingTabId);
+            if (!dragging || dragging.pinned || tab.pinned) return;
+            e.preventDefault();
+            const rect = tab.tabEl.getBoundingClientRect();
+            const before = e.clientX < rect.left + rect.width / 2;
+            const ref = before ? tab.tabEl : tab.tabEl.nextSibling;
+            if (ref === dragging.tabEl) return;
+            this.tabsContainer.insertBefore(dragging.tabEl, ref);
+            this._syncTabOrderFromDom();
         });
 
         // Crash Recovery
@@ -167,6 +197,17 @@ export class TabManager {
             if (this.callbacks.onNotification) this.callbacks.onNotification('Unpin tab before closing');
             return;
         }
+
+        // Track recently closed tabs for quick restore.
+        try {
+            const url = tab.webviewEl.getURL();
+            const title = tab.webviewEl.getTitle();
+            if (url) {
+                this.closedTabs.push({ url, title: title || url, time: Date.now() });
+                if (this.closedTabs.length > 30) this.closedTabs.splice(0, this.closedTabs.length - 30);
+            }
+        } catch (_) { }
+
         const index = this.tabs.indexOf(tab);
         tab.tabEl.remove();
         tab.webviewEl.remove();
@@ -184,6 +225,27 @@ export class TabManager {
         this._saveSession();
     }
 
+    reopenClosedTab() {
+        const last = this.closedTabs.pop();
+        if (!last?.url) return false;
+        this.createTab(last.url, { active: true });
+        return true;
+    }
+
+    switchToNextTab() {
+        if (this.tabs.length < 2) return;
+        const idx = this.tabs.findIndex(t => t.id === this.activeTabId);
+        const next = this.tabs[(idx + 1) % this.tabs.length];
+        if (next) this.switchTab(next.id);
+    }
+
+    switchToPrevTab() {
+        if (this.tabs.length < 2) return;
+        const idx = this.tabs.findIndex(t => t.id === this.activeTabId);
+        const prev = this.tabs[(idx - 1 + this.tabs.length) % this.tabs.length];
+        if (prev) this.switchTab(prev.id);
+    }
+
     duplicateTab(id) {
         const tab = this.tabs.find(t => t.id === id);
         if (!tab) return;
@@ -195,6 +257,7 @@ export class TabManager {
         if (!tab) return;
         tab.pinned = !tab.pinned;
         tab.tabEl.classList.toggle('pinned', tab.pinned);
+        tab.tabEl.draggable = !tab.pinned;
         if (this.callbacks.onNotification) this.callbacks.onNotification(tab.pinned ? '📌 Tab pinned' : '📌 Tab unpinned');
 
         // Move pinned tabs to the left
@@ -263,5 +326,13 @@ export class TabManager {
     loadURL(url) {
         const active = this.getActive();
         if (active) active.webviewEl.loadURL(url);
+    }
+
+    _syncTabOrderFromDom() {
+        const order = [...this.tabsContainer.children]
+            .map(el => (el?.id || '').replace(/^tab-/, ''))
+            .filter(Boolean);
+        this.tabs.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+        this._saveSession();
     }
 }

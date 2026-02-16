@@ -30,6 +30,7 @@ export class UIManager {
             zoomIndicator: document.getElementById('zoom-indicator'),
             zoomLevelEl: document.getElementById('zoom-level'),
             engineSelect: document.getElementById('engine-select'),
+            themeSelect: document.getElementById('theme-select'),
             adblockToggle: document.getElementById('adblock-toggle')
         };
 
@@ -40,6 +41,9 @@ export class UIManager {
             brave: 'https://search.brave.com/search?q='
         };
         this.currentSearchEngine = localStorage.getItem('searchEngine') || 'google';
+        this.showBookmarksBar = localStorage.getItem('showBookmarksBar') !== 'false';
+        this.paletteSelectedIndex = 0;
+        this.theme = localStorage.getItem('theme') || 'system';
     }
 
     init() {
@@ -49,9 +53,12 @@ export class UIManager {
         this.setupAIChat();
         this.setupFindBar();
         this.setupSettings();
+        this.setupDownloads();
 
         // Restore search engine selection
         if (this.elements.engineSelect) this.elements.engineSelect.value = this.currentSearchEngine;
+        if (this.elements.themeSelect) this.elements.themeSelect.value = this.theme;
+        this.applyTheme(this.theme);
 
         // Global Clock
         setInterval(() => this.updateGlobalClock(), 1000);
@@ -98,25 +105,44 @@ export class UIManager {
 
             const sessionInfo = document.getElementById('session-info');
             if (url.startsWith('https://')) {
-                secureIcon.style.display = 'block';
-                secureIcon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#81C995" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+                if (secureIcon) {
+                    secureIcon.style.display = 'inline-flex';
+                    secureIcon.dataset.state = 'secure';
+                    secureIcon.title = 'Secure connection (HTTPS)';
+                    secureIcon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+                }
                 if (sessionInfo) {
                     sessionInfo.textContent = new URL(url).hostname;
                     sessionInfo.style.color = '#81C995';
                 }
             } else if (url.startsWith('http://')) {
-                secureIcon.style.display = 'block';
-                secureIcon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FEBC2E" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+                if (secureIcon) {
+                    secureIcon.style.display = 'inline-flex';
+                    secureIcon.dataset.state = 'warning';
+                    secureIcon.title = 'Not secure (HTTP)';
+                    secureIcon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+                }
                 if (sessionInfo) {
                     sessionInfo.textContent = '⚠ Not Secure';
                     sessionInfo.style.color = '#FEBC2E';
                 }
             } else {
-                secureIcon.style.display = 'none';
+                if (secureIcon) {
+                    secureIcon.style.display = 'inline-flex';
+                    secureIcon.dataset.state = 'neutral';
+                    secureIcon.title = 'Internal page';
+                    secureIcon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
+                }
                 if (sessionInfo) {
                     sessionInfo.textContent = this.PM.isLoggedIn() ? `Signed in as ${this.PM.profile.name}` : 'KITS Browser';
                     sessionInfo.style.color = '#E3E3E3';
                 }
+            }
+
+            const bmBtn = document.getElementById('bookmark-btn');
+            if (bmBtn) {
+                if (url.startsWith('http')) bmBtn.classList.toggle('bookmarked', this.isBookmarked(url));
+                else bmBtn.classList.remove('bookmarked');
             }
 
             const statusText = document.getElementById('status-text');
@@ -133,6 +159,7 @@ export class UIManager {
 
         if (input === 'kits://history') { this.TM.createTab('history.html'); omnibox.blur(); return; }
         if (input === 'kits://bookmarks') { this.TM.createTab('bookmarks.html'); omnibox.blur(); return; }
+        if (input === 'kits://downloads') { this.openDownloads(); omnibox.blur(); return; }
         if (input === 'kits://newtab') { this.TM.createTab('ntp.html'); omnibox.blur(); return; }
         if (input === 'kits://settings') { document.getElementById('settings-modal').classList.remove('hidden'); omnibox.blur(); return; }
 
@@ -156,9 +183,28 @@ export class UIManager {
 
             this.suggestionDebounce = setTimeout(async () => {
                 try {
-                    const res = await fetch(`https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(query)}`);
-                    const data = await res.json();
-                    this.renderSuggestions(data[1]);
+                    const local = this.getLocalUrlSuggestions(query);
+                    let remote = [];
+                    if (window.electronAPI?.getSearchSuggestions) {
+                        remote = await window.electronAPI.getSearchSuggestions(query, this.currentSearchEngine);
+                    } else {
+                        const res = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}`);
+                        const data = await res.json();
+                        remote = data?.[1] || [];
+                    }
+                    const remoteItems = (Array.isArray(remote) ? remote : [])
+                        .filter(s => typeof s === 'string')
+                        .map(s => ({ type: 'search', value: s, label: s }));
+
+                    const seen = new Set();
+                    const combined = [...local, ...remoteItems].filter(s => {
+                        const v = String(s?.value || '').trim();
+                        if (!v || seen.has(v)) return false;
+                        seen.add(v);
+                        return true;
+                    });
+
+                    this.renderSuggestions(combined);
                 } catch (e) { suggestionsList.classList.add('hidden'); }
             }, 200);
         });
@@ -196,11 +242,22 @@ export class UIManager {
         const { suggestionsList, omnibox } = this.elements;
         if (!list || list.length === 0) { suggestionsList.classList.add('hidden'); return; }
         suggestionsList.innerHTML = '';
-        list.slice(0, 6).forEach((s) => {
+        list.slice(0, 8).forEach((raw) => {
+            const s = typeof raw === 'string' ? { type: 'search', value: raw, label: raw } : raw;
+            const value = String(s?.value ?? s?.label ?? '').trim();
+            const labelText = String(s?.label ?? s?.value ?? '').trim();
+            if (!value) return;
+
             const div = document.createElement('div');
             div.className = 'suggestion-item';
-            div.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.4; flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>${s}</span>`;
-            div.onclick = () => { omnibox.value = s; this.navigateOmnibox(); };
+            div.dataset.value = value;
+            div.innerHTML = s?.type === 'url'
+                ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.45; flex-shrink:0;"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 1 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 1 1-7-7l1-1"/></svg>`
+                : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.4; flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
+            const label = document.createElement('span');
+            label.textContent = labelText;
+            div.appendChild(label);
+            div.onclick = () => { omnibox.value = value; this.navigateOmnibox(); };
             suggestionsList.appendChild(div);
         });
         suggestionsList.classList.remove('hidden');
@@ -209,8 +266,51 @@ export class UIManager {
     highlightSuggestion(items) {
         items.forEach((el, i) => el.classList.toggle('selected', i === this.selectedSuggestionIndex));
         if (this.selectedSuggestionIndex >= 0) {
-            this.elements.omnibox.value = items[this.selectedSuggestionIndex].querySelector('span').textContent;
+            const el = items[this.selectedSuggestionIndex];
+            this.elements.omnibox.value = el?.dataset?.value || el?.querySelector?.('span')?.textContent || '';
         }
+    }
+
+    getLocalUrlSuggestions(query) {
+        const q = String(query || '').toLowerCase().trim();
+        if (!q) return [];
+
+        const out = [];
+        const seen = new Set();
+        const push = (url) => {
+            const u = String(url || '').trim();
+            if (!u || seen.has(u)) return;
+            seen.add(u);
+            out.push({ type: 'url', value: u, label: u });
+        };
+
+        // Bookmarks first
+        try {
+            const bookmarks = this._readLocalArray('bookmarks');
+            for (const bm of bookmarks) {
+                if (out.length >= 4) break;
+                const title = String(bm?.title || '').toLowerCase();
+                const url = String(bm?.url || '');
+                if (title.includes(q) || url.toLowerCase().includes(q)) push(url);
+            }
+        } catch (_) { }
+
+        // History (most recent first)
+        try {
+            let history = [];
+            try { history = JSON.parse(localStorage.getItem('browsing-history') || '[]'); } catch (_) { history = []; }
+            if (Array.isArray(history)) {
+                for (let i = history.length - 1; i >= 0 && out.length < 8; i--) {
+                    const h = history[i];
+                    const title = String(h?.title || '').toLowerCase();
+                    const url = String(h?.url || '');
+                    if (!url) continue;
+                    if (title.includes(q) || url.toLowerCase().includes(q)) push(url);
+                }
+            }
+        } catch (_) { }
+
+        return out;
     }
 
     setupEventListeners() {
@@ -227,13 +327,57 @@ export class UIManager {
         document.getElementById('zen-btn').onclick = () => this.toggleZenMode();
         document.getElementById('reader-btn').onclick = () => this.toggleReaderMode();
         document.getElementById('bookmark-btn').onclick = () => this.bookmarkCurrentPage();
-        document.getElementById('menu-btn').onclick = () => this.TM.createTab('settings.html');
+        document.getElementById('menu-btn').onclick = (e) => { e.stopPropagation(); this.toggleAppMenu(); };
         document.getElementById('sidebar-settings-btn').addEventListener('click', () => this.TM.createTab('settings.html'));
 
         // Window controls
-        document.getElementById('min-btn').onclick = () => window.electronAPI.minimizeWindow();
-        document.getElementById('max-btn').onclick = () => window.electronAPI.maximizeWindow();
-        document.getElementById('close-btn-win').onclick = () => window.electronAPI.closeWindow();
+        document.getElementById('min-btn').onclick = () => window.electronAPI?.minimizeWindow?.();
+        document.getElementById('max-btn').onclick = () => window.electronAPI?.maximizeWindow?.();
+        document.getElementById('close-btn-win').onclick = () => window.electronAPI?.closeWindow?.();
+
+        // Site info indicator
+        const secBtn = document.getElementById('secure-icon');
+        if (secBtn) {
+            secBtn.style.cursor = 'pointer';
+            secBtn.onclick = () => this.showSiteInfo();
+        }
+
+        // Security banner close
+        const bannerClose = document.getElementById('security-banner-close');
+        if (bannerClose) bannerClose.onclick = () => document.getElementById('security-banner')?.classList.add('hidden');
+
+        // App menu items
+        document.querySelectorAll('.app-menu-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const action = item.getAttribute('data-action');
+                switch (action) {
+                    case 'new-tab': this.TM.createTab(); break;
+                    case 'reopen-closed': {
+                        const ok = this.TM.reopenClosedTab?.();
+                        if (!ok) this.showNotification('No recently closed tabs');
+                        break;
+                    }
+                    case 'history': this.TM.createTab('history.html'); break;
+                    case 'bookmarks': this.TM.createTab('bookmarks.html'); break;
+                    case 'downloads': this.openDownloads(); break;
+                    case 'privacy': window.openPrivacyDashboard?.(); break;
+                    case 'settings': document.getElementById('settings-modal')?.classList.remove('hidden'); break;
+                    case 'screenshot': this.takeScreenshot(); break;
+                    case 'about': window.openAboutModal?.(); break;
+                    case 'system-info': window.openSystemInfo?.(); break;
+                }
+                this.closeAppMenu();
+            });
+        });
+
+        // Close app menu on outside click
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('app-menu');
+            const btn = document.getElementById('menu-btn');
+            if (!menu || menu.classList.contains('hidden')) return;
+            if (menu.contains(e.target) || btn?.contains(e.target)) return;
+            this.closeAppMenu();
+        });
 
         // Keyboard shortcuts
         window.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
@@ -243,32 +387,8 @@ export class UIManager {
             item.addEventListener('click', () => {
                 const title = item.getAttribute('title');
 
-                // Toggle AI Menu
                 if (title === 'AI Hub') {
-                    const menu = document.getElementById('ai-hub-menu');
-                    const btn = document.getElementById('side-ai-btn');
-
-                    if (menu.classList.contains('hidden')) {
-                        // Position dynamically if needed, or just toggle
-                        const rect = btn.getBoundingClientRect();
-                        menu.style.top = `${rect.top}px`;
-                        menu.classList.remove('hidden');
-                        btn.classList.add('active');
-
-                        // Close on click outside
-                        const closeMenu = (e) => {
-                            if (!menu.contains(e.target) && !btn.contains(e.target)) {
-                                menu.classList.add('hidden');
-                                btn.classList.remove('active');
-                                document.removeEventListener('click', closeMenu);
-                            }
-                        };
-                        // Timeout to avoid immediate close from current click
-                        setTimeout(() => document.addEventListener('click', closeMenu), 0);
-                    } else {
-                        menu.classList.add('hidden');
-                        btn.classList.remove('active');
-                    }
+                    this.toggleAIPanel();
                     return;
                 }
 
@@ -282,18 +402,6 @@ export class UIManager {
                 }
             });
         });
-
-        // AI Hub Click Handlers
-        document.querySelectorAll('.ai-menu-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const url = item.getAttribute('data-url');
-                if (url) {
-                    this.TM.createTab(url);
-                    document.getElementById('ai-hub-menu').classList.add('hidden');
-                    document.getElementById('side-ai-btn').classList.remove('active');
-                }
-            });
-        });
     }
 
     handleSidebarClick(title) {
@@ -301,9 +409,9 @@ export class UIManager {
             case 'History': this.TM.createTab('history.html'); break;
             case 'Bookmarks': this.TM.createTab('bookmarks.html'); break;
             case 'Settings': document.getElementById('settings-modal').classList.remove('hidden'); break;
-            case 'Privacy Dashboard': openPrivacyDashboard(); break; // Global or moved to UI?
+            case 'Privacy Dashboard': window.openPrivacyDashboard?.(); break;
             case 'Search': this.TM.createTab('ntp.html'); break;
-            case 'Downloads': this.showNotification('📁 Downloads saved to Downloads folder'); break;
+            case 'Downloads': this.openDownloads(); break;
             default: if (title?.includes('Command')) this.togglePalette(); break;
         }
     }
@@ -311,6 +419,13 @@ export class UIManager {
     handleKeyboardShortcuts(e) {
         if (e.ctrlKey && e.key === 'k') { e.preventDefault(); this.togglePalette(); }
         if (e.ctrlKey && e.key === 't') { e.preventDefault(); this.TM.createTab(); }
+        if (e.ctrlKey && e.key === 'Tab') { e.preventDefault(); e.shiftKey ? this.TM.switchToPrevTab?.() : this.TM.switchToNextTab?.(); }
+        if (e.ctrlKey && e.shiftKey && (e.key === 'T' || e.key === 't')) {
+            e.preventDefault();
+            const ok = this.TM.reopenClosedTab?.();
+            if (!ok) this.showNotification('No recently closed tabs');
+        }
+        if (e.ctrlKey && e.shiftKey && (e.key === 'B' || e.key === 'b')) { e.preventDefault(); this.toggleBookmarksBar(); }
         if (e.ctrlKey && e.key === 'w') { e.preventDefault(); if (this.TM.activeTabId) this.TM.closeTab(this.TM.activeTabId); }
         if (e.ctrlKey && e.key === 'l') { e.preventDefault(); this.elements.omnibox.focus(); this.elements.omnibox.select(); }
         if (e.ctrlKey && e.key === 'j') { e.preventDefault(); this.toggleAIPanel(); }
@@ -322,19 +437,55 @@ export class UIManager {
         if (e.ctrlKey && e.key === '0') { e.preventDefault(); this.TM.zoomReset(); }
         if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) { e.preventDefault(); this.takeScreenshot(); }
         if (e.key === 'F5') { e.preventDefault(); this.TM.reload(); }
-        if (e.key === 'F11') { e.preventDefault(); window.electronAPI.toggleFullscreen(); }
+        if (e.key === 'F11') { e.preventDefault(); window.electronAPI?.toggleFullscreen?.(); }
         if (e.key === 'Escape') {
             if (this.findActive) this.closeFindBar();
             else if (!this.elements.palette.classList.contains('hidden')) this.togglePalette();
             // Close modals...
             document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+            document.getElementById('tab-context-menu')?.classList.add('hidden');
+            document.getElementById('app-menu')?.classList.add('hidden');
+            document.getElementById('security-banner')?.classList.add('hidden');
             if (document.body.classList.contains('zen-mode')) this.toggleZenMode();
         }
     }
 
+    toggleAppMenu() {
+        const menu = document.getElementById('app-menu');
+        const btn = document.getElementById('menu-btn');
+        if (!menu || !btn) return;
+
+        if (!menu.classList.contains('hidden')) {
+            this.closeAppMenu();
+            return;
+        }
+
+        menu.style.left = '-9999px';
+        menu.style.top = '-9999px';
+        menu.classList.remove('hidden');
+
+        // Position relative to the menu button, clamped to the viewport.
+        requestAnimationFrame(() => {
+            const b = btn.getBoundingClientRect();
+            const m = menu.getBoundingClientRect();
+            let left = b.right - m.width;
+            let top = b.bottom + 8;
+            left = Math.max(8, Math.min(left, window.innerWidth - m.width - 8));
+            if (top + m.height > window.innerHeight - 8) top = Math.max(8, b.top - m.height - 8);
+            menu.style.left = `${left}px`;
+            menu.style.top = `${top}px`;
+        });
+    }
+
+    closeAppMenu() {
+        document.getElementById('app-menu')?.classList.add('hidden');
+    }
+
     toggleAIPanel() {
         this.elements.aiPanel.classList.toggle('hidden');
-        if (!this.elements.aiPanel.classList.contains('hidden')) this.elements.aiInput.focus();
+        const open = !this.elements.aiPanel.classList.contains('hidden');
+        document.getElementById('side-ai-btn')?.classList.toggle('active', open);
+        if (open) this.elements.aiInput.focus();
     }
 
     toggleZenMode() {
@@ -342,16 +493,24 @@ export class UIManager {
         this.showNotification(document.body.classList.contains('zen-mode') ? '🧘 Zen Mode — Escape to exit' : 'Zen Mode off');
     }
 
-    toggleReaderMode() {
+    async toggleReaderMode() {
         const active = this.TM.getActive();
         if (!active) return;
         try {
-            active.webviewEl.insertCSS(`
+            if (active.readerCssKey) {
+                await active.webviewEl.removeInsertedCSS(active.readerCssKey);
+                active.readerCssKey = null;
+                this.showNotification('📖 Reader Mode off');
+                return;
+            }
+
+            const key = await active.webviewEl.insertCSS(`
                 body { max-width:800px !important; margin:0 auto !important; padding:40px !important; font-family:'Georgia',serif !important; line-height:1.8 !important; font-size:18px !important; background:#fdf6e3 !important; color:#586e75 !important; }
                 img { max-width:100% !important; height:auto !important; }
                 nav,header,footer,aside,.ads,.sidebar,[role="banner"],[role="navigation"],[role="complementary"],#comments,.comments { display:none !important; }
             `);
-            this.showNotification('📖 Reader Mode activated');
+            active.readerCssKey = key;
+            this.showNotification('📖 Reader Mode on');
         } catch (e) { this.showNotification('Reader Mode unavailable'); }
     }
 
@@ -365,23 +524,18 @@ export class UIManager {
             const title = active.webviewEl.getTitle();
             if (!url.startsWith('http')) { this.showNotification('Cannot bookmark this page'); return; }
 
-            let bookmarks = [];
-            if (window.electronAPI) {
-                bookmarks = await window.electronAPI.storeGet('bookmarks') || [];
-            } else {
-                bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-            }
+            const bookmarks = await this.getBookmarks();
 
             const idx = bookmarks.findIndex(b => b.url === url);
             if (idx >= 0) {
                 bookmarks.splice(idx, 1);
-                if (window.electronAPI) await window.electronAPI.storeSet('bookmarks', bookmarks);
-                else localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+                await this.setBookmarks(bookmarks);
+                document.getElementById('bookmark-btn')?.classList.remove('bookmarked');
                 this.showNotification(`⭐ Removed: ${title}`);
             } else {
                 bookmarks.push({ title, url, time: Date.now() });
-                if (window.electronAPI) await window.electronAPI.storeSet('bookmarks', bookmarks);
-                else localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+                await this.setBookmarks(bookmarks);
+                document.getElementById('bookmark-btn')?.classList.add('bookmarked');
                 this.showNotification(`⭐ Bookmarked: ${title}`);
             }
             this.renderBookmarksBar();
@@ -392,14 +546,9 @@ export class UIManager {
         const bar = document.getElementById('bookmarks-bar');
         if (!bar) return;
 
-        let bookmarks = [];
-        if (window.electronAPI) {
-            bookmarks = await window.electronAPI.storeGet('bookmarks') || [];
-        } else {
-            bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-        }
+        const bookmarks = await this.getBookmarks();
 
-        if (bookmarks.length === 0) { bar.classList.add('hidden'); return; }
+        if (!this.showBookmarksBar || bookmarks.length === 0) { bar.classList.add('hidden'); return; }
         bar.classList.remove('hidden');
         bar.innerHTML = '';
         bookmarks.slice(0, 12).forEach(bm => {
@@ -407,41 +556,401 @@ export class UIManager {
             try { domain = new URL(bm.url).hostname; } catch (_) { }
             const btn = document.createElement('button');
             btn.className = 'bookmarks-bar-item';
-            btn.innerHTML = `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=16" onerror="this.style.display='none'"><span>${bm.title.substring(0, 20)}</span>`;
+            const img = document.createElement('img');
+            img.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+            img.onerror = () => { img.style.display = 'none'; };
+
+            const label = document.createElement('span');
+            label.textContent = String(bm.title || '').substring(0, 20);
+
+            btn.appendChild(img);
+            btn.appendChild(label);
             btn.onclick = () => { const a = this.TM.getActive(); if (a) a.webviewEl.loadURL(bm.url); else this.TM.createTab(bm.url); };
             bar.appendChild(btn);
         });
     }
 
+    toggleBookmarksBar() {
+        this.showBookmarksBar = !this.showBookmarksBar;
+        try { localStorage.setItem('showBookmarksBar', String(this.showBookmarksBar)); } catch (_) { }
+        this.renderBookmarksBar();
+        this.showNotification(this.showBookmarksBar ? 'Bookmarks bar shown' : 'Bookmarks bar hidden');
+    }
+
+    isBookmarked(url) {
+        if (!url || typeof url !== 'string') return false;
+        try {
+            const list = this._readLocalArray('bookmarks');
+            return list.some(b => b?.url === url);
+        } catch (_) { return false; }
+    }
+
+    applyTheme(mode) {
+        const m = mode === 'dark' || mode === 'light' ? mode : 'system';
+        this.theme = m;
+        if (m === 'system') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', m);
+    }
+
+    _readLocalArray(key) {
+        try {
+            const v = JSON.parse(localStorage.getItem(key) || '[]');
+            return Array.isArray(v) ? v : [];
+        } catch (_) { return []; }
+    }
+
+    _mergeBookmarks(a = [], b = []) {
+        const map = new Map();
+        const add = (bm) => {
+            if (!bm || typeof bm !== 'object') return;
+            if (typeof bm.url !== 'string' || !bm.url) return;
+            const url = bm.url;
+            const existing = map.get(url);
+            const next = {
+                title: typeof bm.title === 'string' && bm.title.trim() ? bm.title : url,
+                url,
+                time: typeof bm.time === 'number' ? bm.time : Date.now()
+            };
+            if (!existing || (next.time || 0) >= (existing.time || 0)) map.set(url, next);
+        };
+        (b || []).forEach(add);
+        (a || []).forEach(add);
+        return [...map.values()].sort((x, y) => (y.time || 0) - (x.time || 0));
+    }
+
+    async getBookmarks() {
+        const local = this._readLocalArray('bookmarks');
+        let stored = [];
+        if (window.electronAPI) {
+            try {
+                const v = await window.electronAPI.storeGet('bookmarks');
+                stored = Array.isArray(v) ? v : [];
+            } catch (_) { stored = []; }
+        }
+
+        const merged = this._mergeBookmarks(local, stored);
+
+        // Sync to localStorage for internal pages (bookmarks.html) and to store for persistence.
+        try { localStorage.setItem('bookmarks', JSON.stringify(merged)); } catch (_) { }
+        if (window.electronAPI) {
+            try { await window.electronAPI.storeSet('bookmarks', merged); } catch (_) { }
+        }
+        return merged;
+    }
+
+    async setBookmarks(bookmarks) {
+        const list = Array.isArray(bookmarks) ? bookmarks : [];
+        try { localStorage.setItem('bookmarks', JSON.stringify(list)); } catch (_) { }
+        if (window.electronAPI) {
+            try { await window.electronAPI.storeSet('bookmarks', list); } catch (_) { }
+        }
+        return list;
+    }
+
+    showSiteInfo() {
+        const active = this.TM.getActive();
+        if (!active) return;
+        try {
+            const url = active.webviewEl.getURL();
+            if (url.startsWith('https://')) this.showNotification('🔒 Secure connection (HTTPS)');
+            else if (url.startsWith('http://')) this.showNotification('⚠️ Not secure (HTTP)');
+            else this.showNotification('🌐 Internal page');
+        } catch (_) {
+            this.showNotification('Site info unavailable');
+        }
+    }
+
+    setupDownloads() {
+        const closeBtn = document.getElementById('close-downloads');
+        const clearBtn = document.getElementById('downloads-clear-btn');
+        const search = document.getElementById('downloads-search');
+        const toast = document.getElementById('download-toast');
+
+        closeBtn?.addEventListener('click', () => document.getElementById('downloads-modal')?.classList.add('hidden'));
+        toast?.addEventListener('click', () => this.openDownloads());
+
+        search?.addEventListener('input', (e) => this.renderDownloads(e.target.value || ''));
+
+        clearBtn?.addEventListener('click', async () => {
+            if (!window.electronAPI) {
+                this.showNotification('Downloads history unavailable');
+                return;
+            }
+            if (!confirm('Clear download history?')) return;
+            await window.electronAPI.storeSet('downloadHistory', []);
+            await this.renderDownloads(document.getElementById('downloads-search')?.value || '');
+            this.showNotification('Download history cleared');
+        });
+    }
+
+    async openDownloads() {
+        const modal = document.getElementById('downloads-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        await this.renderDownloads(document.getElementById('downloads-search')?.value || '');
+    }
+
+    async refreshDownloadsIfOpen() {
+        const modal = document.getElementById('downloads-modal');
+        if (!modal || modal.classList.contains('hidden')) return;
+        await this.renderDownloads(document.getElementById('downloads-search')?.value || '');
+    }
+
+    _formatBytes(bytes) {
+        const n = Number(bytes);
+        if (!Number.isFinite(n) || n <= 0) return '—';
+        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.min(units.length - 1, Math.floor(Math.log(n) / Math.log(1024)));
+        const v = n / (1024 ** i);
+        return `${v >= 10 ? v.toFixed(0) : v.toFixed(1)} ${units[i]}`;
+    }
+
+    _formatWhen(ts) {
+        const t = Number(ts);
+        if (!Number.isFinite(t) || t <= 0) return '';
+        try { return new Date(t).toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+        catch (_) { return ''; }
+    }
+
+    async renderDownloads(filter = '') {
+        const listEl = document.getElementById('downloads-list');
+        if (!listEl) return;
+
+        if (!window.electronAPI) {
+            listEl.innerHTML = `<div style="padding:18px; opacity:0.7;">Downloads history is available in the desktop app.</div>`;
+            return;
+        }
+
+        let history = [];
+        try {
+            const v = await window.electronAPI.storeGet('downloadHistory');
+            history = Array.isArray(v) ? v : [];
+        } catch (_) { history = []; }
+
+        const q = String(filter || '').toLowerCase().trim();
+        const filtered = q
+            ? history.filter(h => String(h?.filename || '').toLowerCase().includes(q) || String(h?.path || '').toLowerCase().includes(q))
+            : history;
+
+        const ordered = [...filtered].sort((a, b) => (b?.timestamp || 0) - (a?.timestamp || 0));
+
+        if (ordered.length === 0) {
+            listEl.innerHTML = `<div style="padding:18px; opacity:0.7;">No downloads yet.</div>`;
+            return;
+        }
+
+        listEl.innerHTML = '';
+        ordered.slice(0, 250).forEach((item) => {
+            const row = document.createElement('div');
+            row.className = 'download-item';
+
+            const icon = document.createElement('div');
+            icon.className = 'd-icon';
+            icon.textContent = '⬇️';
+
+            const info = document.createElement('div');
+            info.className = 'd-info';
+
+            const title = document.createElement('div');
+            title.className = 'd-title';
+            title.textContent = item?.filename || 'Download';
+
+            const sub = document.createElement('div');
+            sub.className = 'd-sub';
+            const when = this._formatWhen(item?.timestamp);
+            const size = this._formatBytes(item?.size);
+            const status = String(item?.status || 'unknown');
+            sub.textContent = [status, size, when].filter(Boolean).join(' • ');
+
+            info.appendChild(title);
+            info.appendChild(sub);
+
+            const actions = document.createElement('div');
+            actions.className = 'd-actions';
+
+            const badge = document.createElement('span');
+            const statusLower = status.toLowerCase();
+            let badgeCls = '';
+            if (statusLower === 'completed') badgeCls = 'completed';
+            else if (statusLower === 'interrupted' || statusLower === 'cancelled') badgeCls = 'interrupted';
+            else if (statusLower === 'failed') badgeCls = 'failed';
+            badge.className = `download-badge ${badgeCls}`.trim();
+            badge.textContent = statusLower;
+            actions.appendChild(badge);
+
+            if (item?.path) {
+                const showBtn = document.createElement('button');
+                showBtn.className = 'download-action';
+                showBtn.textContent = 'Show';
+                showBtn.onclick = () => window.electronAPI.openPath(item.path);
+                actions.appendChild(showBtn);
+            }
+
+            row.appendChild(icon);
+            row.appendChild(info);
+            row.appendChild(actions);
+            listEl.appendChild(row);
+        });
+    }
+
     setupCommandPalette() {
         const { palette, paletteInput } = this.elements;
-        document.querySelectorAll('.palette-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const cmd = item.getAttribute('data-cmd');
-                if (cmd === 'new-tab') this.TM.createTab();
-                else if (cmd === 'toggle-ai') this.toggleAIPanel();
-                else if (cmd === 'toggle-zen') this.toggleZenMode();
-                else if (cmd === 'toggle-reader') this.toggleReaderMode();
-                this.togglePalette();
+        const results = document.getElementById('palette-results');
+        if (!palette || !paletteInput || !results) return;
+
+        const runCmd = (cmd, meta = {}) => {
+            switch (cmd) {
+                case 'new-tab': this.TM.createTab(); break;
+                case 'toggle-ai': this.toggleAIPanel(); break;
+                case 'toggle-zen': this.toggleZenMode(); break;
+                case 'toggle-reader': this.toggleReaderMode(); break;
+                case 'open-history': this.TM.createTab('history.html'); break;
+                case 'open-bookmarks': this.TM.createTab('bookmarks.html'); break;
+                case 'open-downloads': this.openDownloads(); break;
+                case 'open-settings': document.getElementById('settings-modal')?.classList.remove('hidden'); break;
+                case 'open-privacy': window.openPrivacyDashboard?.(); break;
+                case 'reopen-closed': {
+                    const ok = this.TM.reopenClosedTab?.();
+                    if (!ok) this.showNotification('No recently closed tabs');
+                    break;
+                }
+                case 'toggle-bookmarks-bar': this.toggleBookmarksBar(); break;
+                case 'screenshot': this.takeScreenshot(); break;
+                case 'switch-tab': if (meta.tabId) this.TM.switchTab(meta.tabId); break;
+            }
+        };
+
+        const build = (queryRaw = '') => {
+            const q = String(queryRaw || '').toLowerCase().trim();
+            results.innerHTML = '';
+
+            const appendGroup = (label) => {
+                const g = document.createElement('div');
+                g.className = 'palette-group';
+                g.textContent = label;
+                results.appendChild(g);
+            };
+
+            const appendItem = ({ cmd, label, icon, kbd, tabId }) => {
+                const item = document.createElement('div');
+                item.className = 'palette-item';
+                item.setAttribute('data-cmd', cmd);
+                if (tabId) item.setAttribute('data-tab-id', tabId);
+
+                const iconWrap = document.createElement('div');
+                iconWrap.className = 'p-item-icon';
+                iconWrap.textContent = icon || '•';
+
+                const span = document.createElement('span');
+                span.textContent = label;
+
+                item.appendChild(iconWrap);
+                item.appendChild(span);
+
+                if (kbd) {
+                    const key = document.createElement('kbd');
+                    key.textContent = kbd;
+                    item.appendChild(key);
+                }
+
+                results.appendChild(item);
+            };
+
+            const commands = [
+                { cmd: 'new-tab', label: 'New Tab', icon: '+', kbd: 'Ctrl+T' },
+                { cmd: 'reopen-closed', label: 'Reopen Closed Tab', icon: '↩︎', kbd: 'Ctrl+Shift+T' },
+                { cmd: 'open-history', label: 'History', icon: '🕘' },
+                { cmd: 'open-bookmarks', label: 'Bookmarks', icon: '🔖' },
+                { cmd: 'open-downloads', label: 'Downloads', icon: '⬇️' },
+                { cmd: 'open-settings', label: 'Settings', icon: '⚙️' },
+                { cmd: 'open-privacy', label: 'Privacy Dashboard', icon: '🛡️' },
+                { cmd: 'toggle-bookmarks-bar', label: 'Toggle Bookmarks Bar', icon: '★', kbd: 'Ctrl+Shift+B' },
+                { cmd: 'toggle-ai', label: 'Toggle AI Panel', icon: '🤖', kbd: 'Ctrl+J' },
+                { cmd: 'toggle-zen', label: 'Toggle Zen Mode', icon: '🧘' },
+                { cmd: 'toggle-reader', label: 'Reader Mode', icon: '📖' },
+                { cmd: 'screenshot', label: 'Screenshot', icon: '📸', kbd: 'Ctrl+Shift+S' }
+            ];
+
+            const cmdMatches = commands.filter(c => !q || c.label.toLowerCase().includes(q));
+            if (cmdMatches.length > 0) {
+                appendGroup('COMMANDS');
+                cmdMatches.forEach(appendItem);
+            }
+
+            const tabs = (this.TM?.tabs || []).map(t => {
+                let url = '';
+                try { url = t.webviewEl?.getURL?.() || ''; } catch (_) { }
+                const title = t.tabEl?.querySelector?.('.tab-title')?.textContent || 'Tab';
+                return { id: t.id, title, url };
             });
+            const tabMatches = tabs.filter(t => !q || t.title.toLowerCase().includes(q) || t.url.toLowerCase().includes(q));
+            if (tabMatches.length > 0) {
+                appendGroup('TABS');
+                tabMatches.slice(0, 12).forEach(t => appendItem({ cmd: 'switch-tab', label: t.title, icon: '🌐', tabId: t.id }));
+            }
+
+            const items = [...results.querySelectorAll('.palette-item')];
+            this.paletteSelectedIndex = 0;
+            items.forEach((el, i) => el.classList.toggle('active', i === 0));
+
+            if (items.length === 0) {
+                const empty = document.createElement('div');
+                empty.style.padding = '14px 12px';
+                empty.style.opacity = '0.65';
+                empty.textContent = 'No results';
+                results.appendChild(empty);
+            }
+        };
+
+        const highlight = (index) => {
+            const items = [...results.querySelectorAll('.palette-item')];
+            if (items.length === 0) return;
+            const i = Math.max(0, Math.min(index, items.length - 1));
+            this.paletteSelectedIndex = i;
+            items.forEach((el, idx) => el.classList.toggle('active', idx === i));
+            items[i]?.scrollIntoView?.({ block: 'nearest' });
+        };
+
+        const runActive = () => {
+            const items = [...results.querySelectorAll('.palette-item')];
+            const el = items[this.paletteSelectedIndex] || items[0];
+            if (!el) return;
+            const cmd = el.getAttribute('data-cmd');
+            const tabId = el.getAttribute('data-tab-id');
+            runCmd(cmd, { tabId });
+            this.togglePalette();
+        };
+
+        results.addEventListener('click', (e) => {
+            const el = e.target.closest('.palette-item');
+            if (!el) return;
+            const cmd = el.getAttribute('data-cmd');
+            const tabId = el.getAttribute('data-tab-id');
+            runCmd(cmd, { tabId });
+            this.togglePalette();
         });
 
-        paletteInput.addEventListener('input', () => {
-            const query = paletteInput.value.toLowerCase();
-            document.querySelectorAll('.palette-item').forEach(item => {
-                const text = item.querySelector('span')?.textContent.toLowerCase() || '';
-                item.style.display = text.includes(query) ? '' : 'none';
-            });
-        });
+        paletteInput.addEventListener('input', () => build(paletteInput.value));
         paletteInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') { const visible = [...document.querySelectorAll('.palette-item')].filter(i => i.style.display !== 'none'); if (visible.length > 0) visible[0].click(); }
+            if (e.key === 'ArrowDown') { e.preventDefault(); highlight(this.paletteSelectedIndex + 1); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(this.paletteSelectedIndex - 1); }
+            else if (e.key === 'Enter') { e.preventDefault(); runActive(); }
+            else if (e.key === 'Escape') { e.preventDefault(); this.togglePalette(); }
         });
+
+        // Keep a reference so togglePalette() can rebuild live tab results.
+        this._buildPalette = build;
+        build('');
     }
 
     togglePalette() {
         const { palette, paletteInput } = this.elements;
         palette.classList.toggle('hidden');
-        if (!palette.classList.contains('hidden')) { paletteInput.value = ''; paletteInput.focus(); }
+        if (!palette.classList.contains('hidden')) {
+            paletteInput.value = '';
+            this._buildPalette?.('');
+            paletteInput.focus();
+        }
     }
 
     setupFindBar() {
@@ -553,7 +1062,7 @@ export class UIManager {
     }
 
     setupSettings() {
-        const { engineSelect, adblockToggle } = this.elements;
+        const { engineSelect, themeSelect, adblockToggle } = this.elements;
 
         if (engineSelect) {
             engineSelect.onchange = (e) => {
@@ -565,6 +1074,28 @@ export class UIManager {
             };
         }
 
+        if (themeSelect) {
+            themeSelect.onchange = (e) => {
+                const mode = e.target.value;
+                this.applyTheme(mode);
+                localStorage.setItem('theme', this.theme);
+                if (window.electronAPI) window.electronAPI.storeSet('theme', this.theme);
+                this.showNotification(`🎨 Theme: ${this.theme}`);
+            };
+
+            // Prefer persisted app config on first run if localStorage has no preference yet.
+            if (window.electronAPI && localStorage.getItem('theme') === null) {
+                window.electronAPI.storeGet('theme')
+                    .then((stored) => {
+                        if (stored && typeof stored === 'string') {
+                            this.applyTheme(stored);
+                            themeSelect.value = this.theme;
+                        }
+                    })
+                    .catch(() => { });
+            }
+        }
+
         if (adblockToggle && window.electronAPI) {
             window.electronAPI.getAdblockStats().then(stats => { adblockToggle.checked = stats.enabled; });
             adblockToggle.onchange = async () => {
@@ -573,9 +1104,20 @@ export class UIManager {
             };
         }
 
+        const clearCacheBtn = document.getElementById('clear-cache-btn');
+        if (clearCacheBtn) {
+            clearCacheBtn.onclick = async () => {
+                if (!window.electronAPI) return this.showNotification('Cache clearing unavailable');
+                const ok = await window.electronAPI.clearCache();
+                this.showNotification(ok ? '🧹 Cache cleared' : 'Cache clear failed');
+            };
+        }
+
         document.getElementById('close-settings').onclick = () => document.getElementById('settings-modal').classList.add('hidden');
         document.getElementById('close-privacy').onclick = () => document.getElementById('privacy-modal').classList.add('hidden');
         document.getElementById('close-about').onclick = () => document.getElementById('about-modal').classList.add('hidden');
         document.getElementById('close-sysinfo').onclick = () => document.getElementById('sysinfo-modal').classList.add('hidden');
+        document.getElementById('close-security-dashboard').onclick = () => document.getElementById('security-dashboard-modal').classList.add('hidden');
+        document.getElementById('close-device-info').onclick = () => document.getElementById('device-info-modal').classList.add('hidden');
     }
 }
