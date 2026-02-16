@@ -332,7 +332,7 @@ export class UIManager {
 
         // Window controls
         document.getElementById('min-btn').onclick = () => window.electronAPI?.minimizeWindow?.();
-        document.getElementById('max-btn').onclick = () => window.electronAPI?.maximizeWindow?.();
+        document.getElementById('max-btn').onclick = () => window.electronAPI?.toggleFullscreen?.();
         document.getElementById('close-btn-win').onclick = () => window.electronAPI?.closeWindow?.();
 
         // Site info indicator

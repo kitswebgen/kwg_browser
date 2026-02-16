@@ -240,13 +240,14 @@ body {
     height: var(--title-height);
     -webkit-app-region: drag;
     padding: 0 10px;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .window-controls {
     display: flex;
     gap: 8px;
     -webkit-app-region: no-drag;
-    margin-right: 12px;
 }
 
 .win-btn {
@@ -281,12 +282,30 @@ body {
     flex-grow: 1;
 }
 
+/* Tabs inside the titlebar */
+#titleapi .titlebar-tabs {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    margin-bottom: 0;
+    overflow: hidden;
+    padding: 0;
+}
+
+/* Ensure tab interactions work inside draggable titlebar */
+#titleapi .tab,
+#titleapi .new-tab-btn,
+#titleapi .tab-count,
+#titleapi .tab-close-btn {
+    -webkit-app-region: no-drag;
+}
+
 /* --- Browser Area --- */
 .browser-chrome {
     background-color: var(--md-sys-color-background);
     display: flex;
     flex-direction: column;
-    padding: 0 8px 8px 8px;
+    padding: 8px 8px 8px 8px;
     /* Padding around the content */
 }
 
@@ -296,10 +315,11 @@ body {
     align-items: center;
     height: var(--tab-height);
     margin-bottom: 8px;
-    overflow-x: auto;
+    overflow: hidden;
     /* Hide scrollbar */
     scrollbar-width: none;
     -ms-overflow-style: none;
+    min-width: 0;
 }
 
 .tab-bar-container::-webkit-scrollbar {
@@ -310,8 +330,16 @@ body {
     display: flex;
     gap: 4px;
     flex-grow: 1;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     min-width: 0;
+    scroll-behavior: smooth;
+}
+
+.tabs::-webkit-scrollbar {
+    display: none;
 }
 
 .tab {
