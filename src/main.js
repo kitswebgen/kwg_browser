@@ -1,5 +1,5 @@
 // ===========================================================
-// KITS Browser — Production Main Process v4.0
+// KITSWebGen — Production Main Process v4.0
 // Security Hardened + Chromium Features + Maximum Functionality
 // ===========================================================
 
@@ -26,7 +26,7 @@ log.transports.file.level = 'info';
 log.transports.console.level = 'debug';
 log.transports.file.maxSize = 5 * 1024 * 1024;
 log.info('======================================');
-log.info(`KITS Browser v${app.getVersion()} starting`);
+log.info(`KITSWebGen v${app.getVersion()} starting`);
 log.info(`Platform: ${process.platform} | Arch: ${process.arch} | Node: ${process.versions.node}`);
 log.info(`Electron: ${process.versions.electron} | Chrome: ${process.versions.chrome}`);
 log.info('======================================');
@@ -57,6 +57,7 @@ const store = new Store({
             clearOnExit: false,
             fingerprintProtection: true
         },
+        sitePermissions: {},
         zoomLevels: {}
     },
     encryptionKey: 'kits-browser-2024-secure',
@@ -176,85 +177,113 @@ function checkUrlSafety(url) {
     return { safe: true };
 }
 
-function createSplashWindow() {
-    splashWindow = new BrowserWindow({
-        width: 420,
-        height: 340,
-        frame: false,
-        transparent: true,
-        resizable: false,
-        alwaysOnTop: true,
-        skipTaskbar: true,
-        center: true,
-        webPreferences: { nodeIntegration: false, contextIsolation: true }
-    });
-    splashWindow.loadFile(path.join(__dirname, 'renderer/splash.html'));
-    splashWindow.once('ready-to-show', () => splashWindow.show());
-    splashWindow.on('closed', () => { splashWindow = null; });
+// ===========================================================
+//  Session Hardening (persist + incognito)
+// ===========================================================
+const configuredPartitions = new Set();
+const runtimePermissionCache = new Map(); // key -> boolean (non-persisted decisions)
+let permissionPromptQueue = Promise.resolve();
+
+function safeUrlOrigin(url) {
+    try { return new URL(String(url || '')).origin; } catch (_) { return ''; }
 }
 
-function createWindow() {
-    const savedBounds = store.get('windowBounds');
-    const sessionId = uuidv4();
-    store.set('sessionId', sessionId);
+function safeUrlHost(url) {
+    try { return new URL(String(url || '')).hostname || ''; } catch (_) { return ''; }
+}
 
-    mainWindow = new BrowserWindow({
-        width: savedBounds.width,
-        height: savedBounds.height,
-        x: savedBounds.x,
-        y: savedBounds.y,
-        minWidth: 900,
-        minHeight: 600,
-        frame: false,
-        backgroundColor: '#1E1F22',
-        show: false,
-        title: 'KITS Browser',
-        icon: path.join(__dirname, 'renderer/icon.png'),
-        webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
-            webviewTag: true,
-            nodeIntegration: false,
-            contextIsolation: true,
-            sandbox: false,
-            backgroundThrottling: false,
-            spellcheck: true,
-            partition: 'persist:kits-browser',
-            enableWebSQL: false,
-            v8CacheOptions: 'bypassHeatCheck'
-        }
+function normalizePermissionKey(permission) {
+    return String(permission || '').toLowerCase();
+}
+
+function getStoredPermission(origin, permission) {
+    if (!origin) return undefined;
+    const all = store.get('sitePermissions', {});
+    const perOrigin = all && typeof all === 'object' ? all[origin] : null;
+    if (!perOrigin || typeof perOrigin !== 'object') return undefined;
+    const key = normalizePermissionKey(permission);
+    const v = perOrigin[key];
+    return typeof v === 'boolean' ? v : undefined;
+}
+
+function setStoredPermission(origin, permission, allowed) {
+    if (!origin) return;
+    const all = store.get('sitePermissions', {});
+    const next = all && typeof all === 'object' ? { ...all } : {};
+    const perOrigin = next[origin] && typeof next[origin] === 'object' ? { ...next[origin] } : {};
+    const key = normalizePermissionKey(permission);
+    perOrigin[key] = !!allowed;
+    next[origin] = perOrigin;
+    store.set('sitePermissions', next);
+}
+
+function permissionDisplayName(permission) {
+    const p = String(permission || '').toLowerCase();
+    if (p === 'media') return 'Camera / Microphone';
+    if (p === 'geolocation') return 'Location';
+    if (p === 'notifications') return 'Notifications';
+    if (p === 'clipboard-read') return 'Clipboard Read';
+    if (p === 'display-capture') return 'Screen Capture';
+    if (p === 'pointerlock') return 'Pointer Lock';
+    if (p === 'fullscreen') return 'Fullscreen';
+    return permission;
+}
+
+async function promptPermission({ partition, permission, requestingUrl }) {
+    const origin = safeUrlOrigin(requestingUrl);
+    const host = safeUrlHost(requestingUrl) || origin || 'this site';
+    const permKey = normalizePermissionKey(permission);
+
+    // Runtime cache first (avoids re-prompting in the same session).
+    const runtimeKey = `${partition}|${origin}|${permKey}`;
+    if (runtimePermissionCache.has(runtimeKey)) return runtimePermissionCache.get(runtimeKey);
+
+    // Persisted decisions (not for incognito).
+    const isIncognito = partition === 'incognito';
+    if (!isIncognito) {
+        const stored = getStoredPermission(origin, permKey);
+        if (typeof stored === 'boolean') return stored;
+    }
+
+    // Ensure we don't stack multiple permission dialogs at once.
+    permissionPromptQueue = permissionPromptQueue.then(async () => {
+        const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+        const permName = permissionDisplayName(permKey);
+        const detail = `Allow ${permName} for ${host}?`;
+
+        const opts = {
+            type: 'question',
+            buttons: ['Allow', 'Deny'],
+            defaultId: 1,
+            cancelId: 1,
+            title: 'Permission request',
+            message: detail,
+            detail: isIncognito ? 'Incognito: this decision will not be saved.' : 'You can change this later in Settings.',
+            checkboxLabel: isIncognito ? undefined : 'Remember for this site',
+            checkboxChecked: true
+        };
+
+        const result = await dialog.showMessageBox(win || undefined, opts);
+        const allowed = result.response === 0;
+
+        runtimePermissionCache.set(runtimeKey, allowed);
+        if (!isIncognito && result.checkboxChecked) setStoredPermission(origin, permKey, allowed);
+        return allowed;
     });
 
-    mainWindow.webContents.setUserAgent(userAgent);
-    mainWindow.loadFile(path.join(__dirname, 'renderer/index.html'));
+    try { return await permissionPromptQueue; }
+    catch (_) { return false; }
+}
 
-    if (store.get('isMaximized')) mainWindow.maximize();
+function configureSession(partition) {
+    if (configuredPartitions.has(partition)) return session.fromPartition(partition);
+    configuredPartitions.add(partition);
 
-    mainWindow.once('ready-to-show', () => {
-        mainWindow.show();
-        log.info('Window ready');
-    });
+    const ses = session.fromPartition(partition);
 
-    // Save window state on resize/move
-    const saveWindowState = () => {
-        if (!mainWindow) return;
-        store.set('isMaximized', mainWindow.isMaximized());
-        if (!mainWindow.isMaximized() && !mainWindow.isMinimized()) {
-            const bounds = mainWindow.getBounds();
-            store.set('windowBounds', bounds);
-        }
-    };
-    mainWindow.on('resize', saveWindowState);
-    mainWindow.on('move', saveWindowState);
-
-    // ===========================================================
-    //  9. SESSION SECURITY CONFIG
-    // ===========================================================
-    const ses = session.fromPartition('persist:kits-browser');
-
-    // Content Security Policy for internal pages
+    // Add security headers to our internal pages
     ses.webRequest.onHeadersReceived((details, callback) => {
         const headers = { ...details.responseHeaders };
-        // Add security headers to our internal pages
         if (details.url.startsWith('file://')) {
             headers['X-Content-Type-Options'] = ['nosniff'];
             headers['X-Frame-Options'] = ['DENY'];
@@ -279,6 +308,9 @@ function createWindow() {
     // Ad blocker + dangerous URL blocker + HTTPS upgrade + Safe Browsing
     ses.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
         const url = details.url;
+
+        // Never block internal renderer pages.
+        if (url.startsWith('file://')) return callback({ cancel: false });
 
         // Block dangerous protocols
         for (const proto of dangerousProtocols) {
@@ -321,50 +353,60 @@ function createWindow() {
         callback({ cancel: false });
     });
 
-    // Permission handler
+    // Permission handlers (prompt + remember)
     ses.setPermissionRequestHandler((webContents, permission, callback, details) => {
-        const allowedPermissions = ['geolocation', 'notifications', 'media', 'persistent-storage', 'clipboard-read', 'clipboard-sanitized-write'];
-        const allowed = allowedPermissions.includes(permission);
-        log.info(`[Permission] ${allowed ? '✓' : '✗'} ${permission} for ${details?.requestingUrl || 'unknown'}`);
-        callback(allowed);
+        const perm = normalizePermissionKey(permission);
+        const promptable = new Set([
+            'geolocation',
+            'notifications',
+            'media',
+            'clipboard-read',
+            'clipboard-sanitized-write',
+            'display-capture',
+            'pointerlock',
+            'fullscreen',
+            'persistent-storage'
+        ]);
+
+        // Always allow persistent storage (needed for IndexedDB reliability).
+        if (perm === 'persistent-storage') return callback(true);
+
+        if (!promptable.has(perm)) {
+            log.info(`[Permission] ✗ ${perm} for ${details?.requestingUrl || 'unknown'}`);
+            return callback(false);
+        }
+
+        const reqUrl = details?.requestingUrl || details?.url || webContents?.getURL?.() || '';
+        promptPermission({ partition, permission: perm, requestingUrl: reqUrl })
+            .then((allowed) => {
+                log.info(`[Permission] ${allowed ? '✓' : '✗'} ${perm} for ${reqUrl || 'unknown'}`);
+                callback(!!allowed);
+            })
+            .catch(() => callback(false));
     });
 
-    ses.setPermissionCheckHandler((webContents, permission) => {
-        const allowedPermissions = ['geolocation', 'notifications', 'media', 'persistent-storage', 'clipboard-read', 'clipboard-sanitized-write'];
-        return allowedPermissions.includes(permission);
+    ses.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+        const perm = normalizePermissionKey(permission);
+        if (perm === 'persistent-storage') return true;
+
+        const origin = safeUrlOrigin(requestingOrigin || details?.requestingUrl || details?.url || webContents?.getURL?.() || '');
+        const runtimeKey = `${partition}|${origin}|${perm}`;
+        if (runtimePermissionCache.has(runtimeKey)) return runtimePermissionCache.get(runtimeKey);
+
+        if (partition !== 'incognito') {
+            const stored = getStoredPermission(origin, perm);
+            if (typeof stored === 'boolean') return stored;
+        }
+
+        return false;
     });
 
-    // Certificate error handling
-    app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
-        log.warn(`[SSL] Certificate error for ${url}: ${error}`);
-        event.preventDefault();
-        // Show warning to user
-        mainWindow?.webContents.send('security-warning', {
-            type: 'certificate',
-            url,
-            error,
-            issuer: certificate.issuerName
-        });
-        callback(false); // Reject by default (secure)
-    });
-
-    // Block third-party cookies if enabled
-    if (store.get('privacySettings.blockThirdPartyCookies')) {
-        ses.cookies.on('changed', (event, cookie, cause, removed) => {
-            // Log third-party cookie activity
-            if (cookie.domain && !cookie.domain.includes('kits-browser')) {
-                // This is just logging; actual blocking is done by partition config
-            }
-        });
-    }
-
-    // ===========================================================
-    //  10. DOWNLOAD MANAGER
-    // ===========================================================
+    // Download manager (per-session)
     ses.on('will-download', (event, item) => {
         const downloadId = uuidv4();
         const filename = item.getFilename();
         const filePath = path.join(app.getPath('downloads'), filename);
+        const isIncognito = partition === 'incognito';
 
         // Security: warn about dangerous file types
         const dangerousExtensions = ['.exe', '.msi', '.bat', '.cmd', '.ps1', '.vbs', '.js', '.wsf', '.scr'];
@@ -372,7 +414,7 @@ function createWindow() {
         const isDangerous = dangerousExtensions.includes(ext);
 
         item.setSavePath(filePath);
-        log.info(`[Download] ${isDangerous ? '⚠️ DANGEROUS ' : ''}${filename} → ${filePath}`);
+        log.info(`[Download] ${isIncognito ? '[Incognito] ' : ''}${isDangerous ? '⚠️ DANGEROUS ' : ''}${filename} → ${filePath}`);
 
         if (isDangerous) {
             mainWindow?.webContents.send('security-warning', {
@@ -382,11 +424,12 @@ function createWindow() {
             });
         }
 
+        const startMs = Date.now();
+
         item.on('updated', (event, state) => {
             const total = item.getTotalBytes();
             const received = item.getReceivedBytes();
             const progress = total > 0 ? (received / total) * 100 : 0;
-            const startMs = (item.getStartTime() || 0) * 1000;
             const elapsedMs = Math.max(1, Date.now() - startMs);
             const speedBps = Math.max(0, received / (elapsedMs / 1000));
             mainWindow?.webContents.send('download-status', {
@@ -394,15 +437,18 @@ function createWindow() {
                 status: state === 'interrupted' ? 'interrupted' : (item.isPaused() ? 'paused' : 'downloading'),
                 filename, progress, received, total,
                 speed: Math.round(speedBps),
-                isDangerous
+                isDangerous,
+                incognito: isIncognito
             });
         });
 
         item.once('done', (event, state) => {
             log.info(`[Download] ${state}: ${filename}`);
             mainWindow?.webContents.send('download-status', {
-                id: downloadId, status: state, filename, path: filePath, isDangerous
+                id: downloadId, status: state, filename, path: filePath, isDangerous, incognito: isIncognito
             });
+            if (isIncognito) return;
+
             const history = store.get('downloadHistory', []);
             history.push({ id: downloadId, filename: sanitize(filename), path: filePath, status: state, timestamp: Date.now(), size: item.getTotalBytes() });
             if (history.length > 500) history.splice(0, history.length - 400);
@@ -410,20 +456,119 @@ function createWindow() {
         });
     });
 
+    return ses;
+}
+
+let globalSecurityHooksInstalled = false;
+function installGlobalSecurityHooks() {
+    if (globalSecurityHooksInstalled) return;
+    globalSecurityHooksInstalled = true;
+
+    // Certificate error handling: reject by default (secure).
+    app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+        log.warn(`[SSL] Certificate error for ${url}: ${error}`);
+        event.preventDefault();
+        mainWindow?.webContents.send('security-warning', {
+            type: 'certificate',
+            url,
+            error,
+            issuer: certificate?.issuerName
+        });
+        callback(false);
+    });
+}
+
+function createSplashWindow() {
+    splashWindow = new BrowserWindow({
+        width: 420,
+        height: 340,
+        frame: false,
+        transparent: true,
+        resizable: false,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        center: true,
+        webPreferences: { nodeIntegration: false, contextIsolation: true }
+    });
+    splashWindow.loadFile(path.join(__dirname, 'renderer/splash.html'));
+    splashWindow.once('ready-to-show', () => splashWindow.show());
+    splashWindow.on('closed', () => { splashWindow = null; });
+}
+
+function createWindow() {
+    const savedBounds = store.get('windowBounds');
+    const sessionId = uuidv4();
+    store.set('sessionId', sessionId);
+
+    mainWindow = new BrowserWindow({
+        width: savedBounds.width,
+        height: savedBounds.height,
+        x: savedBounds.x,
+        y: savedBounds.y,
+        minWidth: 900,
+        minHeight: 600,
+        frame: false,
+        backgroundColor: '#1E1F22',
+        show: false,
+        title: 'KITSWebGen',
+        icon: path.join(__dirname, 'renderer/icon.png'),
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            webviewTag: true,
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: false,
+            backgroundThrottling: false,
+            spellcheck: true,
+            partition: 'persist:kits-browser',
+            enableWebSQL: false,
+            v8CacheOptions: 'bypassHeatCheck'
+        }
+    });
+
+    // Install security hooks and configure both persistent + incognito sessions before any loads.
+    installGlobalSecurityHooks();
+    configureSession('persist:kits-browser');
+    configureSession('incognito');
+
+    mainWindow.webContents.setUserAgent(userAgent);
+    mainWindow.loadFile(path.join(__dirname, 'renderer/index.html'));
+
+    if (store.get('isMaximized')) mainWindow.maximize();
+
+    mainWindow.once('ready-to-show', () => {
+        mainWindow.show();
+        log.info('Window ready');
+    });
+
+    // Save window state on resize/move
+    const saveWindowState = () => {
+        if (!mainWindow) return;
+        store.set('isMaximized', mainWindow.isMaximized());
+        if (!mainWindow.isMaximized() && !mainWindow.isMinimized()) {
+            const bounds = mainWindow.getBounds();
+            store.set('windowBounds', bounds);
+        }
+    };
+    mainWindow.on('resize', saveWindowState);
+    mainWindow.on('move', saveWindowState);
+
+    // Session security, permissions, and downloads are configured via configureSession().
+
     // ===========================================================
     //  11. CRASH / HANG RECOVERY
     // ===========================================================
     mainWindow.webContents.on('render-process-gone', (event, details) => {
         log.error(`Renderer gone: ${details.reason} (code: ${details.exitCode})`);
         if (details.reason !== 'killed' && details.reason !== 'clean-exit') {
-            dialog.showMessageBox({ type: 'error', title: 'KITS Browser — Recovery', message: 'The browser encountered an error.', buttons: ['Restart', 'Quit'] })
+            dialog.showMessageBox({ type: 'error', title: 'KITSWebGen — Recovery', message: 'The browser encountered an error.', buttons: ['Restart', 'Quit'] })
                 .then(r => { if (r.response === 0) { app.relaunch(); app.exit(0); } else app.quit(); });
         }
     });
 
     mainWindow.webContents.on('unresponsive', () => {
         log.warn('Renderer unresponsive');
-        dialog.showMessageBox(mainWindow, { type: 'warning', title: 'Page Unresponsive', message: 'KITS Browser is not responding.', buttons: ['Wait', 'Reload'] })
+        dialog.showMessageBox(mainWindow, { type: 'warning', title: 'Page Unresponsive', message: 'KITSWebGen is not responding.', buttons: ['Wait', 'Reload'] })
             .then(r => { if (r.response === 1) mainWindow.reload(); });
     });
 
@@ -487,7 +632,7 @@ const template = [
     { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'zoom' }, { role: 'close' }] },
     {
         label: 'Help', submenu: [
-            { label: 'About KITS Browser', click: () => mainWindow?.webContents.send('menu-action', 'about') },
+            { label: 'About KITSWebGen', click: () => mainWindow?.webContents.send('menu-action', 'about') },
             { label: 'System Info', click: () => mainWindow?.webContents.send('menu-action', 'system-info') }
         ]
     }
@@ -526,7 +671,7 @@ app.on('ready', () => {
                 tray = new Tray(img);
             }
             const trayMenu = Menu.buildFromTemplate([
-                { label: 'KITS Browser', enabled: false },
+                { label: 'KITSWebGen', enabled: false },
                 { type: 'separator' },
                 { label: 'Show Window', click: () => { mainWindow?.show(); mainWindow?.focus(); } },
                 { label: 'New Tab', click: () => { mainWindow?.show(); mainWindow?.webContents.send('menu-action', 'new-tab'); } },
@@ -534,9 +679,9 @@ app.on('ready', () => {
                 { label: 'System Security', click: () => { mainWindow?.show(); mainWindow?.webContents.send('menu-action', 'system-security'); } },
                 { label: 'Device Info', click: () => { mainWindow?.show(); mainWindow?.webContents.send('menu-action', 'device-info'); } },
                 { type: 'separator' },
-                { label: 'Quit KITS', click: () => { app.isQuitting = true; app.quit(); } }
+                { label: 'Quit KITSWebGen', click: () => { app.isQuitting = true; app.quit(); } }
             ]);
-            tray.setToolTip('KITS Browser — Secure & Fast');
+            tray.setToolTip('KITSWebGen — Secure & Fast');
             tray.setContextMenu(trayMenu);
             tray.on('double-click', () => { mainWindow?.show(); mainWindow?.focus(); });
             log.info('[Tray] System tray created');
@@ -620,8 +765,8 @@ ipcMain.handle('ai-chat', async (event, prompt) => {
     const lower = p.toLowerCase();
     if (lower.includes('summarize')) return "I can help summarize the current page. Click 'Summarize' or just ask!";
     if (lower.includes('who are you') || lower.includes('what are you')) return 'I am KITS AI — your intelligent research assistant built into the browser.';
-    if (lower.includes('help')) return 'I can: summarize pages, answer questions, help with research. Shortcuts: Ctrl+J (AI panel), Ctrl+K (commands), Ctrl+F (find), Ctrl+D (bookmark).';
-    if (lower.includes('shortcut') || lower.includes('keyboard')) return 'Shortcuts:\n• Ctrl+T — New tab\n• Ctrl+W — Close tab\n• Ctrl+L — Focus URL bar\n• Ctrl+F — Find in page\n• Ctrl+D — Bookmark\n• Ctrl+J — AI Panel\n• Ctrl+K — Command Palette\n• Ctrl+Shift+S — Screenshot\n• F11 — Fullscreen\n• F12 — DevTools';
+    if (lower.includes('help')) return 'I can: summarize pages, answer questions, help with research. Shortcuts: Ctrl+K (commands), Ctrl+F (find), Ctrl+D (bookmark).';
+    if (lower.includes('shortcut') || lower.includes('keyboard')) return 'Shortcuts:\n• Ctrl+T — New tab\n• Ctrl+W — Close tab\n• Ctrl+L — Focus URL bar\n• Ctrl+F — Find in page\n• Ctrl+D — Bookmark\n• Ctrl+K — Command Palette\n• Ctrl+Shift+S — Screenshot\n• F11 — Fullscreen\n• F12 — DevTools';
     return `KITS AI: I've processed your query about "${p}". How else can I assist?`;
 });
 
@@ -1056,7 +1201,7 @@ ipcMain.handle('get-device-info', () => {
 ipcMain.handle('send-notification', (e, { title, body, urgency }) => {
     if (!Notification.isSupported()) return { success: false, reason: 'Notifications not supported' };
     const notification = new Notification({
-        title: title || 'KITS Browser',
+        title: title || 'KITSWebGen',
         body: body || '',
         icon: path.join(__dirname, 'renderer/icon.png'),
         urgency: urgency || 'normal'

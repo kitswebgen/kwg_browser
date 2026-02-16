@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KITS WebGen Chromium</title>
-    <!-- Use Google Fonts (Material Icons or Inter also good) -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>KITSWebGen</title>
+    <link rel="icon" href="icon.png">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="notifications.css">
 </head>
@@ -96,12 +95,6 @@
                 <div
                     style="width: 1px; background: var(--md-sys-color-outline); height: 20px; margin: 0 4px; opacity: 0.3;">
                 </div>
-                <button id="ai-toggle-btn" title="KITS AI">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path
-                            d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 2a8 8 0 0 0-8 8c0 4.418 3.582 8 8 8s8-3.582 8-8-3.582-8-8-8zm0 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8z" />
-                    </svg>
-                </button>
                 <button id="user-btn" title="KITS Profile" style="color: var(--md-sys-color-primary);">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -157,13 +150,6 @@
                     </svg>
                 </button>
                 <div style="width: 24px; height: 1px; background: var(--sys-glass-border); margin: 8px 0;"></div>
-                <button class="side-item" title="AI Hub" id="side-ai-btn" style="color: var(--accent-color);">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path
-                            d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 2a8 8 0 0 0-8 8c0 4.418 3.582 8 8 8s8-3.582 8-8-3.582-8-8-8zm0 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8z" />
-                        <path d="M12 8v8M8 12h8" stroke-linecap="round" />
-                    </svg>
-                </button>
             </div>
             <div class="side-nav-bottom">
                 <button class="side-item" title="Downloads">
@@ -190,38 +176,12 @@
             <div id="status-bar" class="status-bar">
                 <span id="status-text">Ready</span>
                 <div style="display:flex; align-items:center; gap: 12px;">
-                    <span id="global-weather" style="opacity:0.8;">☀️ 31°C Akola</span>
                     <span id="global-time" style="font-weight:600;">12:00 PM</span>
                     <span id="session-info">KITS Secure Session</span>
                 </div>
             </div>
         </div>
 
-        <!-- AI Side Panel -->
-        <div id="ai-panel" class="ai-panel hidden">
-            <div class="ai-header">
-                <span>KITS AI Assistant</span>
-                <button id="ai-close-btn"
-                    style="background:none; border:none; color:inherit; cursor:pointer; font-size:18px;">&times;</button>
-            </div>
-            <div id="chat-container" class="chat-container">
-                <div class="chat-message ai">Hello! I'm KITS AI. I can help you summarize pages, extract data, or just
-                    chat.</div>
-            </div>
-            <button id="ai-summarize-btn" class="kits-btn primary"
-                style="width:100%; margin-bottom:12px; background: #A8C7FA; color: #003355; border:none; padding:10px; border-radius:12px; cursor:pointer; font-weight:600;">
-                ✨ Summarize Current Page
-            </button>
-            <div class="ai-input-wrapper">
-                <input type="text" id="ai-input" class="ai-input" placeholder="Ask anything..." />
-                <button id="ai-send-btn" class="ai-send-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="22" y1="2" x2="11" y2="13"></line>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
-                </button>
-            </div>
-        </div>
     </div>
 
     <!-- Command Palette -->
@@ -563,8 +523,8 @@
     <!-- About Modal -->
     <div id="about-modal" class="modal hidden">
         <div class="modal-content glass" style="width:420px; text-align:center;">
-            <div style="font-size:48px; margin-bottom:12px;">🌐</div>
-            <h2 style="margin-bottom:4px;">KITS Browser</h2>
+            <img src="icon.png" alt="KITSWebGen" style="width:72px; height:72px; margin-bottom:12px; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,0.25);" />
+            <h2 style="margin-bottom:4px;">KITSWebGen</h2>
             <div style="opacity:0.5; font-size:12px; margin-bottom:20px;">Chromium-based Secure Browser</div>
             <div id="about-info" style="text-align:left; font-size:13px; line-height:2; opacity:0.8;"></div>
             <button id="close-about" class="kits-btn secondary"

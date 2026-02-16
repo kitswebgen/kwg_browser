@@ -16,6 +16,8 @@ export class UIManager {
         this._bookmarkUrlSet = new Set();
         this._dbChannel = null;
         this._dbSyncTimers = { bookmarks: null, kv: null };
+        this._omniboxOverlaySpace = 0;
+        this._omniboxOverlayRaf = null;
 
         this.elements = {
             omnibox: document.getElementById('omnibox'),
@@ -25,9 +27,6 @@ export class UIManager {
             refreshBtn: document.getElementById('refresh-btn'),
             homeBtn: document.getElementById('home-btn'),
             secureIcon: document.getElementById('secure-icon'),
-            aiPanel: document.getElementById('ai-panel'),
-            aiInput: document.getElementById('ai-input'),
-            chatContainer: document.getElementById('chat-container'),
             palette: document.getElementById('command-palette'),
             paletteInput: document.getElementById('palette-input'),
             notification: document.getElementById('notification'),
@@ -58,10 +57,10 @@ export class UIManager {
         this.setupEventListeners();
         this.setupOmnibox();
         this.setupCommandPalette();
-        this.setupAIChat();
         this.setupFindBar();
         this.setupSettings();
         this.setupDownloads();
+        this.setupOverlayGuards();
 
         // Restore search engine selection
         if (this.elements.engineSelect) this.elements.engineSelect.value = this.currentSearchEngine;
@@ -76,6 +75,20 @@ export class UIManager {
 
         // Global Clock
         this.startGlobalClock();
+    }
+
+    setupOverlayGuards() {
+        const update = () => {
+            const anyModalOpen = [...document.querySelectorAll('.modal')].some(m => !m.classList.contains('hidden'));
+            document.body.classList.toggle('overlay-open', anyModalOpen);
+        };
+
+        const observer = new MutationObserver(update);
+        document.querySelectorAll('.modal').forEach((m) => {
+            observer.observe(m, { attributes: true, attributeFilter: ['class'] });
+        });
+
+        update();
     }
 
     setupDbBroadcastSync() {
@@ -259,7 +272,7 @@ export class UIManager {
                 }
                 if (sessionInfo) {
                     if (isIncognito) sessionInfo.textContent = '🕶 Incognito';
-                    else sessionInfo.textContent = this.PM.isLoggedIn() ? `Signed in as ${this.PM.profile.name}` : 'KITS Browser';
+                    else sessionInfo.textContent = this.PM.isLoggedIn() ? `Signed in as ${this.PM.profile.name}` : 'KITSWebGen';
                     sessionInfo.style.color = '#E3E3E3';
                 }
             }
@@ -295,6 +308,7 @@ export class UIManager {
         active.webviewEl.loadURL(input);
         omnibox.blur();
         suggestionsList.classList.add('hidden');
+        this._setOmniboxOverlaySpace(0);
     }
 
     setupOmnibox() {
@@ -304,7 +318,7 @@ export class UIManager {
             clearTimeout(this.suggestionDebounce);
             this.selectedSuggestionIndex = -1;
             const query = omnibox.value.trim();
-            if (query.length < 2) { suggestionsList.classList.add('hidden'); return; }
+            if (query.length < 2) { suggestionsList.classList.add('hidden'); this._setOmniboxOverlaySpace(0); return; }
 
             this.suggestionDebounce = setTimeout(async () => {
                 try {
@@ -330,7 +344,7 @@ export class UIManager {
                     });
 
                     this.renderSuggestions(combined);
-                } catch (e) { suggestionsList.classList.add('hidden'); }
+                } catch (e) { suggestionsList.classList.add('hidden'); this._setOmniboxOverlaySpace(0); }
             }, 200);
         });
 
@@ -351,21 +365,53 @@ export class UIManager {
                 this.highlightSuggestion(items);
             }
             else if (e.key === 'Enter') { e.preventDefault(); this.navigateOmnibox(); }
-            else if (e.key === 'Escape') { suggestionsList.classList.add('hidden'); this.selectedSuggestionIndex = -1; }
+            else if (e.key === 'Escape') { suggestionsList.classList.add('hidden'); this._setOmniboxOverlaySpace(0); this.selectedSuggestionIndex = -1; }
         });
 
-        omnibox.addEventListener('blur', () => setTimeout(() => { suggestionsList.classList.add('hidden'); this.selectedSuggestionIndex = -1; }, 200));
+        omnibox.addEventListener('blur', () => setTimeout(() => { suggestionsList.classList.add('hidden'); this._setOmniboxOverlaySpace(0); this.selectedSuggestionIndex = -1; }, 200));
         omnibox.addEventListener('focus', () => {
             omnibox.select();
             if (window.innerWidth < 800) {
                 // Maybe hide other elements or expand omnibox if needed, for now just ensure select
             }
         });
+
+        window.addEventListener('resize', () => this._scheduleOmniboxOverlaySpaceUpdate());
+    }
+
+    _setOmniboxOverlaySpace(px) {
+        const chrome = document.querySelector('.browser-chrome');
+        if (!chrome) return;
+        const next = Math.max(0, Math.min(520, Math.round(Number(px) || 0)));
+        if (next === this._omniboxOverlaySpace) return;
+        this._omniboxOverlaySpace = next;
+        if (next === 0) chrome.style.removeProperty('--omnibox-overlay-space');
+        else chrome.style.setProperty('--omnibox-overlay-space', `${next}px`);
+    }
+
+    _scheduleOmniboxOverlaySpaceUpdate() {
+        if (this._omniboxOverlayRaf) cancelAnimationFrame(this._omniboxOverlayRaf);
+        this._omniboxOverlayRaf = requestAnimationFrame(() => {
+            this._omniboxOverlayRaf = null;
+            this._updateOmniboxOverlaySpace();
+        });
+    }
+
+    _updateOmniboxOverlaySpace() {
+        const { suggestionsList } = this.elements;
+        if (!suggestionsList || suggestionsList.classList.contains('hidden')) return this._setOmniboxOverlaySpace(0);
+        const chrome = document.querySelector('.browser-chrome');
+        if (!chrome) return;
+
+        const chromeRect = chrome.getBoundingClientRect();
+        const listRect = suggestionsList.getBoundingClientRect();
+        const extra = Math.max(0, listRect.bottom - chromeRect.bottom + 10);
+        this._setOmniboxOverlaySpace(extra);
     }
 
     renderSuggestions(list) {
         const { suggestionsList, omnibox } = this.elements;
-        if (!list || list.length === 0) { suggestionsList.classList.add('hidden'); return; }
+        if (!list || list.length === 0) { suggestionsList.classList.add('hidden'); this._setOmniboxOverlaySpace(0); return; }
         const frag = document.createDocumentFragment();
         list.slice(0, 8).forEach((raw) => {
             const s = typeof raw === 'string' ? { type: 'search', value: raw, label: raw } : raw;
@@ -387,6 +433,7 @@ export class UIManager {
         });
         suggestionsList.replaceChildren(frag);
         suggestionsList.classList.remove('hidden');
+        this._scheduleOmniboxOverlaySpaceUpdate();
     }
 
     highlightSuggestion(items) {
@@ -448,7 +495,6 @@ export class UIManager {
         homeBtn.onclick = () => { const a = this.TM.getActive(); if (a) a.webviewEl.src = 'ntp.html'; };
 
         document.getElementById('new-tab-btn').onclick = () => this.TM.createTab();
-        document.getElementById('ai-toggle-btn').onclick = () => this.toggleAIPanel();
 
         document.getElementById('zen-btn').onclick = () => this.toggleZenMode();
         document.getElementById('reader-btn').onclick = () => this.toggleReaderMode();
@@ -460,6 +506,11 @@ export class UIManager {
         document.getElementById('min-btn').onclick = () => window.electronAPI?.minimizeWindow?.();
         document.getElementById('max-btn').onclick = () => window.electronAPI?.toggleFullscreen?.();
         document.getElementById('close-btn-win').onclick = () => window.electronAPI?.closeWindow?.();
+        document.getElementById('titleapi')?.addEventListener('dblclick', (e) => {
+            const t = e?.target;
+            if (t?.closest?.('.tab, .new-tab-btn, .win-btn, input, button')) return;
+            window.electronAPI?.maximizeWindow?.();
+        });
 
         // Site info indicator
         const secBtn = document.getElementById('secure-icon');
@@ -512,16 +563,11 @@ export class UIManager {
 
         // Sidebar
         document.querySelectorAll('.side-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const title = item.getAttribute('title');
+                item.addEventListener('click', () => {
+                    const title = item.getAttribute('title');
 
-                if (title === 'AI Hub') {
-                    this.toggleAIPanel();
-                    return;
-                }
-
-                document.querySelectorAll('.side-item').forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
+                    document.querySelectorAll('.side-item').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
 
                 if (title === 'Settings') {
                     this.TM.createTab('settings.html');
@@ -641,7 +687,6 @@ export class UIManager {
         if (mod && e.shiftKey && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); this.openClearDataModal(); }
         if (mod && (e.key === 'w' || e.key === 'W')) { e.preventDefault(); if (this.TM.activeTabId) this.TM.closeTab(this.TM.activeTabId); }
         if (mod && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); this.elements.omnibox.focus(); this.elements.omnibox.select(); }
-        if (mod && (e.key === 'j' || e.key === 'J')) { e.preventDefault(); this.toggleAIPanel(); }
         if (mod && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); this.bookmarkCurrentPage(); }
         if (mod && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); this.openFindBar(); }
         if (mod && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); const a = this.TM.getActive(); if (a) try { a.webviewEl.print(); } catch (e) { } }
@@ -692,13 +737,6 @@ export class UIManager {
 
     closeAppMenu() {
         document.getElementById('app-menu')?.classList.add('hidden');
-    }
-
-    toggleAIPanel() {
-        this.elements.aiPanel.classList.toggle('hidden');
-        const open = !this.elements.aiPanel.classList.contains('hidden');
-        document.getElementById('side-ai-btn')?.classList.toggle('active', open);
-        if (open) this.elements.aiInput.focus();
     }
 
     toggleZenMode() {
@@ -1015,7 +1053,6 @@ export class UIManager {
             switch (cmd) {
                 case 'new-tab': this.TM.createTab(); break;
                 case 'new-incognito-tab': this.newIncognitoTab(); break;
-                case 'toggle-ai': this.toggleAIPanel(); break;
                 case 'toggle-zen': this.toggleZenMode(); break;
                 case 'toggle-reader': this.toggleReaderMode(); break;
                 case 'open-history': this.TM.createTab('history.html'); break;
@@ -1082,7 +1119,6 @@ export class UIManager {
                 { cmd: 'open-privacy', label: 'Privacy Dashboard', icon: '🛡️' },
                 { cmd: 'clear-browsing-data', label: 'Clear Browsing Data', icon: '🧹', kbd: 'Ctrl+Shift+Del' },
                 { cmd: 'toggle-bookmarks-bar', label: 'Toggle Bookmarks Bar', icon: '★', kbd: 'Ctrl+Shift+B' },
-                { cmd: 'toggle-ai', label: 'Toggle AI Panel', icon: '🤖', kbd: 'Ctrl+J' },
                 { cmd: 'toggle-zen', label: 'Toggle Zen Mode', icon: '🧘' },
                 { cmd: 'toggle-reader', label: 'Reader Mode', icon: '📖' },
                 { cmd: 'screenshot', label: 'Screenshot', icon: '📸', kbd: 'Ctrl+Shift+S' }
@@ -1213,55 +1249,6 @@ export class UIManager {
         try {
             active.webviewEl.findInPage(query, { forward, findNext: true });
         } catch (e) { }
-    }
-
-    setupAIChat() {
-        const { aiInput } = this.elements;
-        document.getElementById('ai-send-btn').onclick = () => this.sendAi();
-        aiInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') this.sendAi(); });
-        document.getElementById('ai-close-btn').onclick = () => this.elements.aiPanel.classList.add('hidden');
-        document.getElementById('ai-summarize-btn').onclick = () => { aiInput.value = 'summarize this page'; this.sendAi(); };
-    }
-
-    async sendAi() {
-        const { aiInput, chatContainer } = this.elements;
-        const prompt = aiInput.value.trim();
-        if (!prompt) return;
-        this.appendChat('user', prompt);
-        aiInput.value = '';
-
-        if (prompt.toLowerCase().includes('summarize')) {
-            this.appendChat('ai', 'Scanning page content... 🔍');
-            const active = this.TM.getActive();
-            if (active) {
-                try {
-                    const data = await active.webviewEl.executeJavaScript(`(function(){
-                        const a=document.querySelector('article'),m=document.querySelector('main'),c=a?.innerText||m?.innerText||document.body.innerText;
-                        return{t:document.title,c:c.substring(0,4000),l:c.length};
-                    })()`);
-                    this.appendChat('ai', `📄 "${data.t}"\n📊 ~${data.c.split(/\s+/).length} words\n\n${data.c.substring(0, 600)}...`);
-                } catch (e) { this.appendChat('ai', "Couldn't read page — it may be restricted."); }
-            } else { this.appendChat('ai', 'No active tab.'); }
-        } else {
-            try {
-                if (window.electronAPI) {
-                    const res = await window.electronAPI.aiChat(prompt);
-                    this.appendChat('ai', res);
-                } else {
-                    this.appendChat('ai', 'AI API unavailable.');
-                }
-            }
-            catch (e) { this.appendChat('ai', 'Error communicating with AI.'); }
-        }
-    }
-
-    appendChat(role, msg) {
-        const { chatContainer } = this.elements;
-        const div = document.createElement('div');
-        div.className = `chat-message ${role}`;
-        div.textContent = msg;
-        chatContainer.appendChild(div);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
     updateGlobalClock() {

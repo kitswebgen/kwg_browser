@@ -218,10 +218,7 @@ input,
 textarea,
 [contenteditable="true"],
 #omnibox,
-#ai-input,
 #find-input,
-.chat-container,
-.chat-message,
 #notification,
 #notification-msg {
     user-select: text;
@@ -258,27 +255,27 @@ body {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    border: none;
+    border: 1px solid rgba(0, 0, 0, 0.18);
     position: relative;
     cursor: pointer;
     transition: transform 0.1s, opacity 0.2s;
-    background-color: var(--md-sys-color-on-surface-variant);
-    opacity: 0.6;
+    opacity: 0.95;
 }
 
 .win-btn:hover {
     opacity: 1;
+    transform: scale(1.08);
 }
 
-#close-btn-win:hover {
+#close-btn-win {
     background-color: #FF5F57;
 }
 
-#min-btn:hover {
+#min-btn {
     background-color: #FEBC2E;
 }
 
-#max-btn:hover {
+#max-btn {
     background-color: #28C840;
 }
 
@@ -309,8 +306,11 @@ body {
     background-color: var(--md-sys-color-background);
     display: flex;
     flex-direction: column;
-    padding: 8px 8px 8px 8px;
+    padding: 8px 8px calc(8px + var(--omnibox-overlay-space, 0px)) 8px;
     /* Padding around the content */
+    position: relative;
+    z-index: 20;
+    transition: padding-bottom 160ms ease;
 }
 
 /* --- Tabs --- */
@@ -622,7 +622,11 @@ body {
     margin-top: 4px;
     box-shadow: 0 6px 18px var(--sys-glass-shadow);
     overflow: hidden;
-    z-index: 1000;
+    z-index: 9999;
+    max-height: 320px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--sys-glass-border);
 }
 
 .suggestions-list.hidden {
@@ -794,6 +798,7 @@ body {
     overflow: hidden;
     position: relative;
     height: 100%;
+    z-index: 1;
 }
 
 /* --- Webview Container --- */
@@ -808,6 +813,11 @@ body {
     display: flex;
     /* Ensure webview fills it */
     box-shadow: var(--sys-elevation-shadow);
+}
+
+/* Webview is a native layer; hide it when full-screen modals are open to avoid overlay issues. */
+body.overlay-open .webview-container {
+    visibility: hidden;
 }
 
 webview {
