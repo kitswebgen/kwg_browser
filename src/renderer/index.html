@@ -23,18 +23,11 @@
             <button class="win-btn" id="max-btn"></button>
             <button class="win-btn" id="close-btn-win"></button>
         </div>
-        <div class="drag-region"></div>
-        <div style="font-size: 13px; font-weight: 500; display:flex; align-items:center; gap: 8px;">
-            <!-- Could put tab bar here if we wanted "Chrome-style" -->
-        </div>
-    </div>
 
-    <div class="browser-chrome">
-        <!-- New Floating Tab Bar -->
-        <div class="tab-bar-container">
+        <!-- Tabs in Titlebar -->
+        <div class="tab-bar-container titlebar-tabs">
             <div id="tabs-container" class="tabs"></div>
-            <!-- New Tab -->
-            <button id="new-tab-btn" class="new-tab-btn">
+            <button id="new-tab-btn" class="new-tab-btn" title="New Tab" aria-label="New Tab">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -43,7 +36,9 @@
             </button>
             <span id="tab-count" class="tab-count">1</span>
         </div>
+    </div>
 
+    <div class="browser-chrome">
         <!-- New Rounded Toolbar -->
         <div class="toolbar">
             <div class="nav-controls">
