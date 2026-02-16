@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KITS WebGen Chromium</title>
+    <!-- Use Google Fonts (Material Icons or Inter also good) -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="notifications.css">
+</head>
+
+<body>
+    <!-- Page Loading Progress Bar -->
+    <div id="page-progress" class="page-progress"></div>
+
+    <div id="titleapi">
+        <!-- Window Controls -->
+        <!-- Custom Win Controls -->
+        <div class="window-controls">
+            <button class="win-btn" id="min-btn"></button>
+            <button class="win-btn" id="max-btn"></button>
+            <button class="win-btn" id="close-btn-win"></button>
+        </div>
+        <div class="drag-region"></div>
+        <div style="font-size: 13px; font-weight: 500; display:flex; align-items:center; gap: 8px;">
+            <!-- Could put tab bar here if we wanted "Chrome-style" -->
+        </div>
+    </div>
+
+    <div class="browser-chrome">
+        <!-- New Floating Tab Bar -->
+        <div class="tab-bar-container">
+            <div id="tabs-container" class="tabs"></div>
+            <!-- New Tab -->
+            <button id="new-tab-btn" class="new-tab-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+            <span id="tab-count" class="tab-count">1</span>
+        </div>
+
+        <!-- New Rounded Toolbar -->
+        <div class="toolbar">
+            <div class="nav-controls">
+                <button id="back-btn" disabled>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                </button>
+                <button id="forward-btn" disabled>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                </button>
+                <button id="refresh-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6M1 20v-6h6" />
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                    </svg>
+                </button>
+                <button id="home-btn" style="margin-left: 4px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                        <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="omnibox-container" style="position: relative;">
+                <div class="secure-icon" id="secure-icon" style="display:none">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#81C995" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </div>
+                <input type="text" id="omnibox" placeholder="Search Google or type a URL" autocomplete="off" />
+                <button id="bookmark-btn" class="icon-btn" title="Bookmark this page">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon
+                            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                        </polygon>
+                    </svg>
+                </button>
+                <div id="suggestions-list" class="suggestions-list hidden"></div>
+            </div>
+
+            <div class="ext-controls" style="padding-right: 8px; display: flex; gap: 4px;">
+                <button id="theme-btn" title="Toggle Theme">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5" />
+                        <path
+                            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                    </svg>
+                </button>
+                <button id="zen-btn" title="Zen Mode">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                    </svg>
+                </button>
+                <button id="reader-btn" title="Reader Mode">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                </button>
+                <div
+                    style="width: 1px; background: var(--md-sys-color-outline); height: 20px; margin: 0 4px; opacity: 0.3;">
+                </div>
+                <button id="ai-toggle-btn" title="KITS AI">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 2a8 8 0 0 0-8 8c0 4.418 3.582 8 8 8s8-3.582 8-8-3.582-8-8-8zm0 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8z" />
+                    </svg>
+                </button>
+                <button id="user-btn" title="KITS Profile" style="color: var(--md-sys-color-primary);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </button>
+                <button id="menu-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="1"></circle>
+                        <circle cx="12" cy="5" r="1"></circle>
+                        <circle cx="12" cy="19" r="1"></circle>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bookmarks Bar (Hidden by default) -->
+        <div id="bookmarks-bar" class="bookmarks-bar hidden"></div>
+    </div>
+
+    <!-- Main Content: Sidebar + Webview + AI Panel -->
+    <div class="main-content">
+        <!-- New Navigation Sidebar -->
+        <div class="side-nav">
+            <div class="side-nav-top">
+                <button class="side-item active" title="Search">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </button>
+                <button class="side-item" title="Bookmarks" id="side-bookmarks-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </button>
+                <button class="side-item" title="History" id="side-history-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </button>
+                <div style="width: 24px; height: 1px; background: rgba(255,255,255,0.05); margin: 8px 0;"></div>
+                <button class="side-item" title="Privacy Dashboard" id="side-privacy-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                </button>
+                <button class="side-item" title="Command Palette (Ctrl+K)" id="side-command-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3z"></path>
+                        <path d="M6 21a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3v12a3 3 0 0 0 3 3z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="side-nav-bottom">
+                <button class="side-item" title="Downloads">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </button>
+                <button class="side-item" id="sidebar-settings-btn" title="Settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="center-content">
+            <div id="webview-container" class="webview-container"></div>
+            <!-- Status Bar -->
+            <div id="status-bar" class="status-bar">
+                <span id="status-text">Ready</span>
+                <div style="display:flex; align-items:center; gap: 12px;">
+                    <span id="global-weather" style="opacity:0.8;">☀️ 31°C Akola</span>
+                    <span id="global-time" style="font-weight:600;">12:00 PM</span>
+                    <span id="session-info">KITS Secure Session</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Side Panel -->
+        <div id="ai-panel" class="ai-panel hidden">
+            <div class="ai-header">
+                <span>KITS AI Assistant</span>
+                <button id="ai-close-btn"
+                    style="background:none; border:none; color:inherit; cursor:pointer; font-size:18px;">&times;</button>
+            </div>
+            <div id="chat-container" class="chat-container">
+                <div class="chat-message ai">Hello! I'm KITS AI. I can help you summarize pages, extract data, or just
+                    chat.</div>
+            </div>
+            <button id="ai-summarize-btn" class="kits-btn primary"
+                style="width:100%; margin-bottom:12px; background: #A8C7FA; color: #003355; border:none; padding:10px; border-radius:12px; cursor:pointer; font-weight:600;">
+                ✨ Summarize Current Page
+            </button>
+            <div class="ai-input-wrapper">
+                <input type="text" id="ai-input" class="ai-input" placeholder="Ask anything..." />
+                <button id="ai-send-btn" class="ai-send-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Command Palette -->
+    <div id="command-palette" class="modal hidden">
+        <div class="palette-content glass">
+            <div class="palette-input-wrapper">
+                <svg class="palette-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="palette-input" placeholder="Search commands or tabs..." autocomplete="off">
+            </div>
+            <div id="palette-results" class="palette-results">
+                <div class="palette-group">COMMANDS</div>
+                <div class="palette-item active" data-cmd="new-tab">
+                    <div class="p-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg></div>
+                    <span>New Tab</span>
+                    <kbd>Ctrl+T</kbd>
+                </div>
+                <div class="palette-item" data-cmd="toggle-ai">
+                    <div class="p-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 8v4"></path>
+                            <path d="M12 16h.01"></path>
+                        </svg></div>
+                    <span>Toggle AI Panel</span>
+                    <kbd>Ctrl+J</kbd>
+                </div>
+                <div class="palette-item" data-cmd="toggle-zen">
+                    <div class="p-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+                        </svg></div>
+                    <span>Toggle Zen Mode</span>
+                </div>
+                <div class="palette-item" data-cmd="toggle-reader">
+                    <div class="p-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg></div>
+                    <span>Reader Mode</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Dashboard Modal -->
+    <div id="privacy-modal" class="modal hidden">
+        <div class="modal-content glass privacy-content">
+            <div class="modal-header">
+                <h2>Privacy Dashboard</h2>
+                <button id="close-privacy" class="close-btn">&times;</button>
+            </div>
+            <div class="privacy-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="ads-blocked-count">0</div>
+                    <div class="stat-label">Ads Blocked</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="trackers-blocked-count">0</div>
+                    <div class="stat-label">Trackers Blocked</div>
+                </div>
+            </div>
+            <div class="privacy-list">
+                <h3>Trackers Filtered This Session</h3>
+                <div id="tracker-list-container">
+                    <div class="tracker-item"><span>google-analytics.com</span><span
+                            class="badged blocked">Blocked</span></div>
+                    <div class="tracker-item"><span>doubleclick.net</span><span class="badged blocked">Blocked</span>
+                    </div>
+                    <div class="tracker-item"><span>facebook.net</span><span class="badged blocked">Blocked</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content glass" style="width:500px;">
+            <div class="modal-header">
+                <h2>Browser Settings</h2>
+                <button id="close-settings" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Profile Section -->
+                <div class="setting-group">
+                    <h3>Profile</h3>
+                    <div id="profile-section"></div>
+                </div>
+                <div class="setting-group">
+                    <h3>Search Engine</h3>
+                    <select id="engine-select" class="kits-select">
+                        <option value="google">Google (Default)</option>
+                        <option value="bing">Bing</option>
+                        <option value="duckduckgo">DuckDuckGo</option>
+                        <option value="brave">Brave</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <h3>Experimental Features</h3>
+                    <div class="setting-item">
+                        <span>High-Speed Rendering</span>
+                        <input type="checkbox" checked disabled>
+                    </div>
+                    <div class="setting-item">
+                        <span>Ad & Tracker Blocking</span>
+                        <input type="checkbox" id="adblock-toggle" checked>
+                    </div>
+                    <div class="setting-item">
+                        <span>Google Services Sync</span>
+                        <input type="checkbox" checked>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <h3>Performance</h3>
+                    <button id="clear-cache-btn" class="kits-btn secondary">Clear Cache</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login / Profile Modal — Google Style -->
+    <div id="login-modal" class="modal hidden">
+        <div class="modal-content glass" style="width:440px; padding:0; overflow:hidden;">
+            <!-- Close button -->
+            <button id="close-login" class="close-btn"
+                style="position:absolute; top:12px; right:12px; z-index:10;">&times;</button>
+
+            <!-- Google-style header -->
+            <div style="text-align:center; padding:40px 40px 0;">
+                <div style="display:inline-flex; margin-bottom:20px;">
+                    <span style="font-size:36px; font-weight:700; color:#4285F4;">K</span>
+                    <span style="font-size:36px; font-weight:700; color:#EA4335;">I</span>
+                    <span style="font-size:36px; font-weight:700; color:#FBBC05;">T</span>
+                    <span style="font-size:36px; font-weight:700; color:#34A853;">S</span>
+                </div>
+                <h2 style="font-size:22px; font-weight:400; margin-bottom:8px; color:var(--md-sys-color-on-surface);">
+                    Sign in</h2>
+                <p style="font-size:14px; opacity:0.6; margin-bottom:28px;">Use your KITS Account to sync bookmarks,
+                    history &amp; settings</p>
+            </div>
+
+            <div style="padding:0 40px 36px;">
+                <div style="margin-bottom:16px;">
+                    <label
+                        style="font-size:11px; color:var(--md-sys-color-primary); display:block; margin-bottom:4px; font-weight:500;">Display
+                        Name</label>
+                    <input type="text" id="login-name" class="kits-input" placeholder="Your name"
+                        style="width:100%; padding:12px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.04); color:var(--md-sys-color-on-surface); font-size:14px; outline:none;" />
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label
+                        style="font-size:11px; color:var(--md-sys-color-primary); display:block; margin-bottom:4px; font-weight:500;">Email</label>
+                    <input type="email" id="login-email" class="kits-input" placeholder="you@example.com"
+                        style="width:100%; padding:12px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.04); color:var(--md-sys-color-on-surface); font-size:14px; outline:none;" />
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label
+                        style="font-size:11px; color:var(--md-sys-color-primary); display:block; margin-bottom:4px; font-weight:500;">Password</label>
+                    <input type="password" id="login-password" class="kits-input" placeholder="Enter password"
+                        style="width:100%; padding:12px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.04); color:var(--md-sys-color-on-surface); font-size:14px; outline:none;" />
+                </div>
+
+                <div id="login-error"
+                    style="color:#EA4335; font-size:12px; margin-bottom:14px; text-align:center; display:none;"></div>
+
+                <div style="display:flex; gap:12px; justify-content:space-between; align-items:center;">
+                    <button id="login-signup-btn"
+                        style="background:none; border:none; color:#4285F4; font-size:13px; cursor:pointer; font-weight:500; padding:8px 0;">
+                        Create account
+                    </button>
+                    <button id="login-submit-btn"
+                        style="background:#4285F4; color:white; border:none; padding:10px 28px; border-radius:8px; font-weight:600; font-size:14px; cursor:pointer; box-shadow:0 2px 6px rgba(66,133,244,0.3);">
+                        Sign In
+                    </button>
+                </div>
+
+                <!-- Divider -->
+                <div style="display:flex; align-items:center; gap:12px; margin:24px 0 16px;">
+                    <div style="flex:1; height:1px; background:rgba(255,255,255,0.1);"></div>
+                    <span style="font-size:11px; opacity:0.4; text-transform:uppercase; letter-spacing:1px;">or</span>
+                    <div style="flex:1; height:1px; background:rgba(255,255,255,0.1);"></div>
+                </div>
+
+                <!-- Google search shortcut button -->
+                <button id="google-search-btn"
+                    style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:transparent; color:var(--md-sys-color-on-surface); cursor:pointer; font-size:13px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                        <path
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                            fill="#4285F4" />
+                        <path
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            fill="#34A853" />
+                        <path
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                            fill="#FBBC05" />
+                        <path
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                            fill="#EA4335" />
+                    </svg>
+                    Continue with Google Search
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Toast -->
+    <div id="download-toast" class="download-toast hidden">
+        <div class="download-toast-icon">⬇️</div>
+        <div class="download-toast-info">
+            <span id="download-filename" class="download-filename">file.zip</span>
+            <div class="download-progress-bar">
+                <div id="download-progress-fill" class="download-progress-fill"></div>
+            </div>
+            <span id="download-status-text" class="download-status-text">Downloading...</span>
+        </div>
+    </div>
+
+    <!-- Dynamic Notifications (Snackbar) -->
+    <div id="notification" class="notification hidden">
+        <span id="notification-msg"></span>
+    </div>
+
+    <!-- Find in Page Bar -->
+    <div id="find-bar" class="find-bar hidden">
+        <div class="find-bar-inner">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style="opacity:0.5; flex-shrink:0;">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input type="text" id="find-input" placeholder="Find in page..." autocomplete="off" />
+            <span id="find-count" class="find-count">0/0</span>
+            <button id="find-prev" class="find-nav-btn" title="Previous">&#9650;</button>
+            <button id="find-next" class="find-nav-btn" title="Next">&#9660;</button>
+            <button id="find-close" class="find-nav-btn" title="Close">&times;</button>
+        </div>
+    </div>
+
+    <!-- Zoom Indicator -->
+    <div id="zoom-indicator" class="zoom-indicator hidden">
+        <span id="zoom-level">100%</span>
+    </div>
+
+    <!-- Tab Context Menu -->
+    <div id="tab-context-menu" class="tab-context-menu hidden">
+        <div class="ctx-item" data-action="reload-tab">🔄 Reload Tab</div>
+        <div class="ctx-item" data-action="duplicate-tab">📋 Duplicate Tab</div>
+        <div class="ctx-item" data-action="pin-tab">📌 Pin Tab</div>
+        <div class="ctx-item" data-action="mute-tab">🔇 Mute Tab</div>
+        <div class="ctx-separator"></div>
+        <div class="ctx-item" data-action="close-other">Close Other Tabs</div>
+        <div class="ctx-item" data-action="close-right">Close Tabs to Right</div>
+        <div class="ctx-separator"></div>
+        <div class="ctx-item danger" data-action="close-tab">✕ Close Tab</div>
+    </div>
+
+    <!-- Security Warning Banner -->
+    <div id="security-banner" class="security-banner hidden">
+        <span id="security-banner-icon">⚠️</span>
+        <span id="security-banner-msg">Security warning</span>
+        <button id="security-banner-close" class="find-nav-btn">&times;</button>
+    </div>
+
+    <!-- About Modal -->
+    <div id="about-modal" class="modal hidden">
+        <div class="modal-content glass" style="width:420px; text-align:center;">
+            <div style="font-size:48px; margin-bottom:12px;">🌐</div>
+            <h2 style="margin-bottom:4px;">KITS Browser</h2>
+            <div style="opacity:0.5; font-size:12px; margin-bottom:20px;">Chromium-based Secure Browser</div>
+            <div id="about-info" style="text-align:left; font-size:13px; line-height:2; opacity:0.8;"></div>
+            <button id="close-about" class="kits-btn secondary"
+                style="margin-top:20px; padding:8px 24px; border-radius:12px; cursor:pointer;">Close</button>
+        </div>
+    </div>
+
+    <!-- System Info Modal -->
+    <div id="sysinfo-modal" class="modal hidden">
+        <div class="modal-content glass" style="width:520px;">
+            <div class="modal-header">
+                <h2>System Information</h2>
+                <button id="close-sysinfo" class="close-btn">&times;</button>
+            </div>
+            <div id="sysinfo-content" style="font-size:13px; line-height:2;"></div>
+        </div>
+    </div>
+
+    <!-- System Security Dashboard Modal -->
+    <div id="security-dashboard-modal" class="modal hidden">
+        <div class="modal-content glass" style="width:640px; max-height:85vh; overflow-y:auto;">
+            <div class="modal-header">
+                <h2>🛡️ System Security Dashboard</h2>
+                <button id="close-security-dashboard" class="close-btn">&times;</button>
+            </div>
+
+            <!-- Security Score Badge -->
+            <div id="security-score-section" style="text-align:center; padding:20px 0;">
+                <div id="security-grade-badge"
+                    style="display:inline-flex; width:80px; height:80px; border-radius:50%; align-items:center; justify-content:center; font-size:28px; font-weight:800; background:linear-gradient(135deg,#34A853,#4CAF50); color:white; box-shadow:0 4px 20px rgba(52,168,83,0.4); margin-bottom:8px;">
+                    A+</div>
+                <div style="font-size:14px; opacity:0.7; margin-top:8px;">Security Score: <strong
+                        id="security-score-text">10/10</strong></div>
+                <div id="security-score-bar"
+                    style="width:200px; height:6px; background:rgba(255,255,255,0.08); border-radius:4px; margin:8px auto; overflow:hidden;">
+                    <div id="security-score-fill"
+                        style="height:100%; width:100%; background:linear-gradient(90deg,#34A853,#4CAF50); border-radius:4px; transition:width 0.5s;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Tabs -->
+            <div style="display:flex; gap:4px; padding:0 12px; margin-bottom:16px; overflow-x:auto;">
+                <button class="sec-tab active" data-sec-tab="security"
+                    style="padding:8px 16px; border:none; background:rgba(168,199,250,0.15); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">🔒
+                    Security</button>
+                <button class="sec-tab" data-sec-tab="hardware"
+                    style="padding:8px 16px; border:none; background:rgba(255,255,255,0.04); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">💻
+                    Hardware</button>
+                <button class="sec-tab" data-sec-tab="network"
+                    style="padding:8px 16px; border:none; background:rgba(255,255,255,0.04); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">🌐
+                    Network</button>
+                <button class="sec-tab" data-sec-tab="storage"
+                    style="padding:8px 16px; border:none; background:rgba(255,255,255,0.04); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">💾
+                    Storage</button>
+                <button class="sec-tab" data-sec-tab="browser"
+                    style="padding:8px 16px; border:none; background:rgba(255,255,255,0.04); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">🌍
+                    Browser</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="sec-panel-security" class="sec-panel" style="padding:0 16px 16px;"></div>
+            <div id="sec-panel-hardware" class="sec-panel" style="padding:0 16px 16px; display:none;"></div>
+            <div id="sec-panel-network" class="sec-panel" style="padding:0 16px 16px; display:none;"></div>
+            <div id="sec-panel-storage" class="sec-panel" style="padding:0 16px 16px; display:none;"></div>
+            <div id="sec-panel-browser" class="sec-panel" style="padding:0 16px 16px; display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Device Compatibility Modal -->
+    <div id="device-info-modal" class="modal hidden">
+        <div class="modal-content glass" style="width:560px; max-height:80vh; overflow-y:auto;">
+            <div class="modal-header">
+                <h2>📱 Device Compatibility</h2>
+                <button id="close-device-info" class="close-btn">&times;</button>
+            </div>
+            <div id="device-info-content" style="font-size:13px; line-height:1.8;"></div>
+        </div>
+    </div>
+
+    <!-- Network Status Toast (auto-shown on connection change) -->
+    <div id="network-status-toast" class="hidden"
+        style="position:fixed; bottom:60px; left:50%; transform:translateX(-50%); background:rgba(30,31,34,0.95); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:10px 24px; font-size:13px; z-index:9999; display:flex; align-items:center; gap:10px; backdrop-filter:blur(12px); box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+        <span id="network-status-icon">🟢</span>
+        <span id="network-status-msg">Online</span>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+
+</html>

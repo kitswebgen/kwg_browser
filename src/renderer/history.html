@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>History | KITS Browser</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #1E1F22;
+            --surface: #2B2D31;
+            --text: #E3E3E3;
+            --primary: #A8C7FA;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            padding: 40px;
+            margin: 0;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-weight: 600;
+            font-size: 24px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .history-item {
+            background: var(--surface);
+            padding: 12px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            transform: translateX(5px);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .time {
+            font-size: 12px;
+            opacity: 0.5;
+            min-width: 60px;
+        }
+
+        .title {
+            font-weight: 500;
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .url {
+            font-size: 12px;
+            color: var(--primary);
+            opacity: 0.8;
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .delete-btn {
+            opacity: 0;
+            transition: opacity 0.2s;
+            cursor: pointer;
+        }
+
+        .history-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .clear-btn {
+            background: rgba(234, 67, 53, 0.1);
+            color: #EA4335;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>Browsing History</h1>
+        <button class="clear-btn" id="clear-history">Clear History</button>
+    </div>
+    <div id="history-container" class="history-list">
+        <!-- History items will be injected here -->
+    </div>
+
+    <script>
+        const container = document.getElementById('history-container');
+        let history = JSON.parse(localStorage.getItem('browsing-history') || '[]');
+
+        function renderHistory() {
+            container.innerHTML = history.length === 0 ? '<p style="opacity:0.5; text-align:center; padding-top:40px;">No history found.</p>' : '';
+            history.reverse().forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `
+                    <span class="time">${new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span class="title">${item.title}</span>
+                    <span class="url">${item.url}</span>
+                    <span class="delete-btn" onclick="deleteItem(event, ${history.length - 1 - index})">&times;</span>
+                `;
+                div.onclick = () => window.location.href = item.url;
+                container.appendChild(div);
+            });
+        }
+
+        window.deleteItem = (e, index) => {
+            e.stopPropagation();
+            history.splice(index, 1);
+            localStorage.setItem('browsing-history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        document.getElementById('clear-history').onclick = () => {
+            if (confirm('Clear all history?')) {
+                history = [];
+                localStorage.setItem('browsing-history', '[]');
+                renderHistory();
+            }
+        }
+
+        renderHistory();
+    </script>
+</body>
+
+</html>

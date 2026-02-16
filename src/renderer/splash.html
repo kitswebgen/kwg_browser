@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KITS Browser</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated gradient background */
+        .bg-gradient {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 50%);
+            animation: bgPulse 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgPulse {
+            0% {
+                opacity: 0.6;
+                transform: scale(1);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+
+        /* Grid overlay */
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(60px, 60px);
+            }
+        }
+
+        .splash-content {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+
+        /* Logo */
+        .logo-container {
+            width: 96px;
+            height: 96px;
+            position: relative;
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes logoFloat {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .logo-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: #3b82f6;
+            border-right-color: #8b5cf6;
+            animation: ringRotate 2s linear infinite;
+        }
+
+        .logo-ring:nth-child(2) {
+            inset: 6px;
+            border-top-color: #06b6d4;
+            border-left-color: #3b82f6;
+            animation-duration: 3s;
+            animation-direction: reverse;
+        }
+
+        .logo-ring:nth-child(3) {
+            inset: 12px;
+            border-bottom-color: #8b5cf6;
+            border-right-color: #06b6d4;
+            animation-duration: 4s;
+        }
+
+        @keyframes ringRotate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .logo-center {
+            position: absolute;
+            inset: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.3);
+        }
+
+        .brand-name {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #e2e8f0, #ffffff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+
+        .brand-tagline {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: fadeInUp 0.8s ease-out 0.5s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Progress bar */
+        .splash-progress {
+            width: 200px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 16px;
+            animation: fadeInUp 0.8s ease-out 0.7s both;
+        }
+
+        .splash-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+            background-size: 200% 100%;
+            border-radius: 4px;
+            animation: progressFill 2.5s ease-in-out forwards, shimmer 1.5s ease-in-out infinite;
+        }
+
+        @keyframes progressFill {
+            0% {
+                width: 0%;
+            }
+
+            30% {
+                width: 40%;
+            }
+
+            60% {
+                width: 65%;
+            }
+
+            80% {
+                width: 85%;
+            }
+
+            100% {
+                width: 100%;
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .splash-status {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            animation: fadeInUp 0.8s ease-out 0.9s both;
+        }
+
+        /* Version badge */
+        .version-badge {
+            position: absolute;
+            bottom: 20px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.15);
+            letter-spacing: 1px;
+        }
+
+        /* Floating particles */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) {
+            left: 15%;
+            top: 20%;
+            animation-delay: 0s;
+            animation-duration: 7s;
+        }
+
+        .particle:nth-child(2) {
+            left: 75%;
+            top: 30%;
+            animation-delay: 1s;
+            animation-duration: 8s;
+            background: rgba(139, 92, 246, 0.3);
+        }
+
+        .particle:nth-child(3) {
+            left: 40%;
+            top: 70%;
+            animation-delay: 2s;
+            animation-duration: 6s;
+            background: rgba(6, 182, 212, 0.3);
+        }
+
+        .particle:nth-child(4) {
+            left: 85%;
+            top: 65%;
+            animation-delay: 0.5s;
+            animation-duration: 9s;
+        }
+
+        .particle:nth-child(5) {
+            left: 25%;
+            top: 80%;
+            animation-delay: 1.5s;
+            animation-duration: 7s;
+            background: rgba(139, 92, 246, 0.2);
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.3;
+            }
+
+            25% {
+                transform: translate(20px, -30px) scale(1.5);
+                opacity: 0.6;
+            }
+
+            50% {
+                transform: translate(-10px, -60px) scale(1);
+                opacity: 0.3;
+            }
+
+            75% {
+                transform: translate(30px, -30px) scale(1.3);
+                opacity: 0.5;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-gradient"></div>
+    <div class="grid-overlay"></div>
+
+    <!-- Floating particles -->
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+
+    <div class="splash-content">
+        <div class="logo-container">
+            <div class="logo-ring"></div>
+            <div class="logo-ring"></div>
+            <div class="logo-ring"></div>
+            <div class="logo-center">K</div>
+        </div>
+        <div class="brand-name">KITS Browser</div>
+        <div class="brand-tagline">Secure · Fast · Intelligent</div>
+        <div class="splash-progress">
+            <div class="splash-progress-fill"></div>
+        </div>
+        <div class="splash-status">Initializing secure environment...</div>
+    </div>
+
+    <div class="version-badge">v4.0 · Chromium Powered</div>
+
+    <script>
+        const statuses = [
+            'Initializing secure environment...',
+            'Loading Chromium engine...',
+            'Configuring security policies...',
+            'Setting up ad blocker...',
+            'Restoring session...',
+            'Almost ready...'
+        ];
+        let i = 0;
+        const statusEl = document.querySelector('.splash-status');
+        const interval = setInterval(() => {
+            i++;
+            if (i < statuses.length) statusEl.textContent = statuses[i];
+        }, 400);
+    </script>
+</body>
+
+</html>

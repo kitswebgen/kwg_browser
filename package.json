@@ -1,0 +1,25 @@
+{
+  "name": "webbrower",
+  "version": "1.0.0",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "electron": "^40.4.1"
+  },
+  "dependencies": {
+    "electron-context-menu": "^3.6.1",
+    "electron-log": "^5.4.3",
+    "electron-store": "^8.2.0",
+    "node-cron": "^4.2.1",
+    "openai": "^6.22.0",
+    "sanitize-html": "^2.17.0",
+    "uuid": "^13.0.0"
+  }
+}
