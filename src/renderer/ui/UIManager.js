@@ -241,13 +241,56 @@ export class UIManager {
         // Sidebar
         document.querySelectorAll('.side-item').forEach(item => {
             item.addEventListener('click', () => {
+                const title = item.getAttribute('title');
+
+                // Toggle AI Menu
+                if (title === 'AI Hub') {
+                    const menu = document.getElementById('ai-hub-menu');
+                    const btn = document.getElementById('side-ai-btn');
+
+                    if (menu.classList.contains('hidden')) {
+                        // Position dynamically if needed, or just toggle
+                        const rect = btn.getBoundingClientRect();
+                        menu.style.top = `${rect.top}px`;
+                        menu.classList.remove('hidden');
+                        btn.classList.add('active');
+
+                        // Close on click outside
+                        const closeMenu = (e) => {
+                            if (!menu.contains(e.target) && !btn.contains(e.target)) {
+                                menu.classList.add('hidden');
+                                btn.classList.remove('active');
+                                document.removeEventListener('click', closeMenu);
+                            }
+                        };
+                        // Timeout to avoid immediate close from current click
+                        setTimeout(() => document.addEventListener('click', closeMenu), 0);
+                    } else {
+                        menu.classList.add('hidden');
+                        btn.classList.remove('active');
+                    }
+                    return;
+                }
+
                 document.querySelectorAll('.side-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
-                const title = item.getAttribute('title');
+
                 if (title === 'Settings') {
                     this.TM.createTab('settings.html');
                 } else {
                     this.handleSidebarClick(title);
+                }
+            });
+        });
+
+        // AI Hub Click Handlers
+        document.querySelectorAll('.ai-menu-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const url = item.getAttribute('data-url');
+                if (url) {
+                    this.TM.createTab(url);
+                    document.getElementById('ai-hub-menu').classList.add('hidden');
+                    document.getElementById('side-ai-btn').classList.remove('active');
                 }
             });
         });

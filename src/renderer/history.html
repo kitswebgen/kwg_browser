@@ -3,34 +3,82 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History | KITS Browser</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #1E1F22;
-            --surface: #2B2D31;
-            --text: #E3E3E3;
-            --primary: #A8C7FA;
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #A8C7FA;
+            --card-hover: rgba(255, 255, 255, 0.08);
+            --surface: rgba(255, 255, 255, 0.05);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+                --glass-bg: rgba(255, 255, 255, 0.6);
+                --glass-border: rgba(255, 255, 255, 0.4);
+                --text-primary: #1F1F1F;
+                --text-secondary: #5F6368;
+                --accent-color: #0B57D0;
+                --card-hover: rgba(255, 255, 255, 0.8);
+                --surface: rgba(255, 255, 255, 0.5);
+            }
         }
 
         body {
-            background-color: var(--bg);
-            color: var(--text);
+            background: var(--bg-gradient);
+            color: var(--text-primary);
             font-family: 'Outfit', sans-serif;
-            padding: 40px;
             margin: 0;
+            padding: 40px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            animation: fadeIn 0.4s ease-out;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 32px;
         }
 
         h1 {
             font-weight: 600;
-            font-size: 24px;
+            font-size: 28px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px 16px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            width: 300px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-box:focus {
+            border-color: var(--accent-color);
+            background: var(--card-hover);
         }
 
         .history-list {
@@ -41,48 +89,70 @@
 
         .history-item {
             background: var(--surface);
-            padding: 12px 20px;
-            border-radius: 12px;
+            padding: 16px 20px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             gap: 16px;
-            transition: transform 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
+            border: 1px solid transparent;
         }
 
         .history-item:hover {
-            transform: translateX(5px);
-            background: rgba(255, 255, 255, 0.05);
+            transform: scale(1.01);
+            background: var(--card-hover);
+            border-color: var(--glass-border);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
         .time {
             font-size: 12px;
-            opacity: 0.5;
+            color: var(--text-secondary);
             min-width: 60px;
+            font-weight: 500;
+        }
+
+        .info {
+            flex-grow: 1;
+            overflow: hidden;
         }
 
         .title {
             font-weight: 500;
-            flex-grow: 1;
+            font-size: 15px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            margin-bottom: 4px;
+            color: var(--text-primary);
         }
 
         .url {
             font-size: 12px;
-            color: var(--primary);
+            color: var(--accent-color);
             opacity: 0.8;
-            max-width: 300px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .delete-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
             opacity: 0;
-            transition: opacity 0.2s;
             cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background: rgba(234, 67, 53, 0.1);
+            color: #EA4335;
         }
 
         .history-item:hover .delete-btn {
@@ -93,56 +163,120 @@
             background: rgba(234, 67, 53, 0.1);
             color: #EA4335;
             border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 500;
             cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .clear-btn:hover {
+            background: rgba(234, 67, 53, 0.2);
+            transform: translateY(-1px);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="header">
-        <h1>Browsing History</h1>
-        <button class="clear-btn" id="clear-history">Clear History</button>
-    </div>
-    <div id="history-container" class="history-list">
-        <!-- History items will be injected here -->
+    <div class="container">
+        <div class="header">
+            <h1>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                History
+            </h1>
+            <input type="text" id="search" class="search-box" placeholder="Search history...">
+            <button class="clear-btn" id="clear-history">Clear All</button>
+        </div>
+        <div id="history-container" class="history-list">
+            <!-- Dynamic Content -->
+        </div>
     </div>
 
     <script>
         const container = document.getElementById('history-container');
-        let history = JSON.parse(localStorage.getItem('browsing-history') || '[]');
+        const searchInput = document.getElementById('search');
 
-        function renderHistory() {
-            container.innerHTML = history.length === 0 ? '<p style="opacity:0.5; text-align:center; padding-top:40px;">No history found.</p>' : '';
-            history.reverse().forEach((item, index) => {
+        let history = [];
+        try {
+            history = JSON.parse(localStorage.getItem('browsing-history') || '[]');
+        } catch (e) { }
+
+        function renderHistory(filter = '') {
+            const filtered = history.filter(h =>
+                h.title.toLowerCase().includes(filter.toLowerCase()) ||
+                h.url.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:40px; opacity:0.6;">
+                        ${history.length === 0 ? 'No history yet.' : 'No matches found.'}
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            // Show latest first
+            [...filtered].reverse().forEach((item) => {
+                // Find original index for deletion
+                const originalIndex = history.indexOf(item);
+
                 const div = document.createElement('div');
                 div.className = 'history-item';
                 div.innerHTML = `
                     <span class="time">${new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    <span class="title">${item.title}</span>
-                    <span class="url">${item.url}</span>
-                    <span class="delete-btn" onclick="deleteItem(event, ${history.length - 1 - index})">&times;</span>
+                    <div class="info">
+                        <div class="title">${item.title || 'Untitled'}</div>
+                        <div class="url">${item.url}</div>
+                    </div>
+                    <div class="delete-btn" onclick="deleteItem(event, ${originalIndex})">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </div>
                 `;
-                div.onclick = () => window.location.href = item.url;
+                div.onclick = (e) => {
+                    if (!e.target.closest('.delete-btn')) window.location.href = item.url;
+                };
                 container.appendChild(div);
             });
         }
 
         window.deleteItem = (e, index) => {
             e.stopPropagation();
-            history.splice(index, 1);
-            localStorage.setItem('browsing-history', JSON.stringify(history));
-            renderHistory();
+            if (index > -1) {
+                history.splice(index, 1);
+                localStorage.setItem('browsing-history', JSON.stringify(history));
+                renderHistory(searchInput.value);
+            }
         }
 
         document.getElementById('clear-history').onclick = () => {
-            if (confirm('Clear all history?')) {
+            if (confirm('Are you sure you want to clear your entire browsing history?')) {
                 history = [];
                 localStorage.setItem('browsing-history', '[]');
                 renderHistory();
             }
         }
+
+        searchInput.addEventListener('input', (e) => renderHistory(e.target.value));
 
         renderHistory();
     </script>

@@ -160,6 +160,14 @@
                         <path d="M6 21a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3v12a3 3 0 0 0 3 3z"></path>
                     </svg>
                 </button>
+                <div style="width: 24px; height: 1px; background: rgba(255,255,255,0.05); margin: 8px 0;"></div>
+                <button class="side-item" title="AI Hub" id="side-ai-btn" style="color: var(--accent-color);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 2a8 8 0 0 0-8 8c0 4.418 3.582 8 8 8s8-3.582 8-8-3.582-8-8-8zm0 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8z" />
+                        <path d="M12 8v8M8 12h8" stroke-linecap="round" />
+                    </svg>
+                </button>
             </div>
             <div class="side-nav-bottom">
                 <button class="side-item" title="Downloads">
@@ -579,6 +587,44 @@
     </div>
 
     <script type="module" src="renderer.js"></script>
+    <!-- AI Hub Menu -->
+    <div id="ai-hub-menu" class="hidden">
+        <div class="ai-menu-item" data-url="https://chatgpt.com">
+            <span class="ai-icon">🤖</span>
+            <div class="ai-info">
+                <div class="ai-name">ChatGPT</div>
+                <div class="ai-desc">OpenAI's assistant</div>
+            </div>
+        </div>
+        <div class="ai-menu-item" data-url="https://gemini.google.com">
+            <span class="ai-icon">✨</span>
+            <div class="ai-info">
+                <div class="ai-name">Gemini</div>
+                <div class="ai-desc">Google's advanced AI</div>
+            </div>
+        </div>
+        <div class="ai-menu-item" data-url="https://claude.ai">
+            <span class="ai-icon">🧠</span>
+            <div class="ai-info">
+                <div class="ai-name">Claude</div>
+                <div class="ai-desc">Anthropic's helper</div>
+            </div>
+        </div>
+        <div class="ai-menu-item" data-url="https://copilot.microsoft.com">
+            <span class="ai-icon">✈️</span>
+            <div class="ai-info">
+                <div class="ai-name">Copilot</div>
+                <div class="ai-desc">Microsoft AI</div>
+            </div>
+        </div>
+        <div class="ai-menu-item" data-url="https://perplexity.ai">
+            <span class="ai-icon">🔍</span>
+            <div class="ai-info">
+                <div class="ai-name">Perplexity</div>
+                <div class="ai-desc">AI Search Engine</div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
