@@ -24,6 +24,20 @@
 
     --title-height: 40px;
     --tab-height: 38px;
+
+    /* Semantic Glass Variables (Dark Default) */
+    --sys-glass-bg: rgba(30, 31, 35, 0.7);
+    --sys-glass-element: rgba(255, 255, 255, 0.1);
+    --sys-glass-border: rgba(255, 255, 255, 0.08);
+    --sys-glass-highlight: rgba(255, 255, 255, 0.05);
+    --sys-glass-shadow: rgba(0, 0, 0, 0.3);
+    --sys-elevation-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --sys-focus-ring: rgba(168, 199, 250, 0.4);
+}
+
+::selection {
+    background-color: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
 }
 
 /* Global Custom Scrollbar */
@@ -40,24 +54,34 @@
     background: var(--md-sys-color-outline);
     border-radius: 5px;
     border: 2px solid var(--md-sys-color-background);
-    /* Creates padding effect */
 }
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--md-sys-color-on-surface-variant);
 }
 
-[data-theme="light"] {
-    --md-sys-color-background: #F3F3F3;
-    --md-sys-color-surface: #FFFFFF;
-    --md-sys-color-surface-container: #E3E3E3;
-    --md-sys-color-primary: #0B57D0;
-    /* Google Blue */
-    --md-sys-color-on-primary: #FFFFFF;
-    --md-sys-color-secondary-container: #D3E3FD;
-    --md-sys-color-on-surface: #1F1F1F;
-    --md-sys-color-on-surface-variant: #444746;
-    --md-sys-color-outline: #747775;
+@media (prefers-color-scheme: light) {
+    :root {
+        --md-sys-color-background: #F3F3F3;
+        --md-sys-color-surface: #FFFFFF;
+        --md-sys-color-surface-container: #E3E3E3;
+        --md-sys-color-primary: #0B57D0;
+        /* Google Blue */
+        --md-sys-color-on-primary: #FFFFFF;
+        --md-sys-color-secondary-container: #D3E3FD;
+        --md-sys-color-on-surface: #1F1F1F;
+        --md-sys-color-on-surface-variant: #444746;
+        --md-sys-color-outline: #747775;
+
+        /* Semantic Glass Variables (Light Mode) */
+        --sys-glass-bg: rgba(245, 245, 245, 0.7);
+        --sys-glass-border: rgba(0, 0, 0, 0.08);
+        /* Darker border for light mode */
+        --sys-glass-highlight: rgba(0, 0, 0, 0.03);
+        --sys-glass-shadow: rgba(0, 0, 0, 0.1);
+        --sys-elevation-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        --sys-focus-ring: rgba(11, 87, 208, 0.3);
+    }
 }
 
 /* Zen Mode */
@@ -226,15 +250,15 @@ body {
 }
 
 .tab:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--sys-glass-highlight);
     color: var(--md-sys-color-on-surface);
 }
 
 .tab.active {
     background-color: var(--md-sys-color-surface-container);
     color: var(--md-sys-color-on-surface);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(168, 199, 250, 0.1);
-    border: 1px solid rgba(168, 199, 250, 0.2);
+    box-shadow: 0 2px 6px var(--sys-glass-shadow), 0 0 0 1px var(--sys-glass-border);
+    border: 1px solid transparent;
 }
 
 .tab-icon {
@@ -311,7 +335,7 @@ body {
 }
 
 .new-tab-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--sys-glass-element);
     color: var(--md-sys-color-on-surface);
 }
 
@@ -354,7 +378,7 @@ body {
 }
 
 .toolbar button:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--sys-glass-element);
     color: var(--md-sys-color-primary);
     transform: translateY(-1px);
 }
@@ -380,13 +404,13 @@ body {
 }
 
 .omnibox-container:hover {
-    background-color: #232428;
+    background-color: var(--md-sys-color-surface-container);
 }
 
 .omnibox-container:focus-within {
     box-shadow: 0 0 0 2px var(--md-sys-color-primary);
     /* Focus Ring */
-    background-color: #232428;
+    background-color: var(--md-sys-color-surface-container);
 }
 
 #omnibox {
@@ -429,7 +453,7 @@ body {
 
 .suggestion-item:hover,
 .suggestion-item.selected {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--sys-glass-element);
 }
 
 .suggestion-icon {
@@ -446,17 +470,17 @@ body {
 /* --- AI Side Panel --- */
 .ai-panel {
     width: 350px;
-    background: linear-gradient(135deg, var(--md-sys-color-surface) 0%, rgba(20, 20, 25, 0.95) 100%);
+    background: linear-gradient(135deg, var(--md-sys-color-surface) 0%, var(--sys-glass-bg) 100%);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-left: 1px solid var(--sys-glass-border);
     display: flex;
     flex-direction: column;
     padding: 20px;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     border-top-left-radius: 24px;
     margin: 0 8px 0 0;
-    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.2);
+    box-shadow: -10px 0 30px var(--sys-glass-shadow);
 }
 
 .ai-panel.hidden {
@@ -538,16 +562,16 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--sys-glass-highlight);
     padding: 8px 8px 8px 16px;
     border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--sys-glass-border);
     transition: all 0.3s;
 }
 
 .ai-input-wrapper:focus-within {
     border-color: var(--md-sys-color-primary);
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--sys-glass-element);
 }
 
 .ai-input {
@@ -597,6 +621,7 @@ body {
     /* Slight margin to float the content area */
     display: flex;
     /* Ensure webview fills it */
+    box-shadow: var(--sys-elevation-shadow);
 }
 
 webview {
@@ -619,7 +644,7 @@ webview.active {
     justify-content: space-between;
     align-items: center;
     padding: 16px 0;
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid var(--sys-glass-border);
     z-index: 10;
 }
 
@@ -646,7 +671,7 @@ webview.active {
 }
 
 .side-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--sys-glass-highlight);
     color: var(--md-sys-color-primary);
     transform: scale(1.1);
 }
@@ -669,7 +694,7 @@ webview.active {
 .status-bar {
     height: 24px;
     background-color: var(--md-sys-color-background);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--sys-glass-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -701,13 +726,13 @@ webview.active {
 }
 
 .modal-content.glass {
-    background: rgba(43, 45, 49, 0.9);
+    background: var(--sys-glass-bg);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--sys-glass-border);
     border-radius: 20px;
     width: 450px;
     padding: 24px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--sys-elevation-shadow);
     animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -750,9 +775,9 @@ webview.active {
 
 .kits-select {
     width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
+    background: var(--sys-glass-highlight);
+    border: 1px solid var(--sys-glass-border);
+    color: var(--md-sys-color-on-surface);
     padding: 8px;
     border-radius: 8px;
     outline: none;
@@ -768,8 +793,8 @@ webview.active {
 }
 
 .kits-btn.secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: var(--sys-glass-element);
+    color: var(--md-sys-color-on-surface);
 }
 
 .kits-btn:hover {
@@ -777,15 +802,32 @@ webview.active {
     filter: brightness(1.2);
 }
 
+.kits-input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--sys-glass-border);
+    background: var(--sys-glass-element);
+    color: var(--md-sys-color-on-surface);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.kits-input:focus {
+    border-color: var(--md-sys-color-primary);
+    background: var(--md-sys-color-surface-container);
+}
+
 /* --- Command Palette --- */
 .palette-content.glass {
     width: 600px;
-    background: rgba(30, 31, 34, 0.85);
+    background: var(--sys-glass-bg);
     backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--sys-glass-border);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+    box-shadow: var(--sys-elevation-shadow);
 }
 
 .palette-input-wrapper {
@@ -1000,9 +1042,9 @@ kbd {
     position: fixed;
     bottom: 40px;
     right: 16px;
-    background: rgba(43, 45, 49, 0.95);
+    background: var(--sys-glass-bg);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--sys-glass-border);
     border-radius: 16px;
     padding: 16px 20px;
     display: flex;
@@ -1444,40 +1486,96 @@ body.zen-mode .main-content {
 
 /* Glassmorphism Toolbar */
 .toolbar {
-    background: rgba(30, 31, 35, 0.7);
+    background: var(--sys-glass-bg);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--sys-glass-border);
+    box-shadow: 0 8px 32px var(--sys-glass-shadow);
 }
 
 /* Omnibox Glow */
+/* Omnibox Glow */
 .omnibox-container:focus-within {
-    background: rgba(0, 0, 0, 0.3);
-    box-shadow: 0 0 0 2px rgba(168, 199, 250, 0.3), 0 0 15px rgba(168, 199, 250, 0.1);
-    border: 1px solid rgba(168, 199, 250, 0.2);
+    background: var(--sys-glass-bg);
+    box-shadow: 0 0 0 2px var(--sys-focus-ring), 0 0 15px var(--sys-focus-ring);
+    border: 1px solid var(--sys-focus-ring);
 }
 
 /* Button Micro-interactions */
-.toolbar button:active, .nav-controls button:active {
+.toolbar button:active,
+.nav-controls button:active {
     transform: scale(0.92);
 }
 
-/* Scrollbar refinement */
-::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border: 3px solid transparent;
-    background-clip: content-box;
-    border-radius: 99px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border: 3px solid transparent;
-    background-clip: content-box;
-}
+/* Scrollbar refinement removed to use global semantic styles */
 
 /* Context Menu Polish */
 .tab-context-menu {
     border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.05);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Webview Background to prevent flash */
+.browser-webview {
+    background: var(--md-sys-color-background);
+}
+
+/* --- Responsiveness --- */
+@media (max-width: 800px) {
+    .side-nav {
+        width: 48px;
+    }
+
+    .side-item {
+        width: 32px;
+        height: 32px;
+    }
+
+    .ai-panel {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 100;
+        width: 90%;
+        max-width: 350px;
+    }
+
+    .omnibox-container {
+        padding: 0 12px;
+    }
+
+    /* Hide some toolbar items on smaller screens */
+    #reader-btn,
+    #zen-btn {
+        display: none;
+    }
+}
+
+@media (max-width: 600px) {
+    .tab {
+        min-width: 40px;
+        padding: 0 6px;
+    }
+
+    .tab-title {
+        display: none;
+    }
+
+    .tab.active .tab-title {
+        display: block;
+    }
+
+    .nav-controls {
+        gap: 0;
+    }
+
+    .toolbar button {
+        width: 32px;
+        height: 32px;
+    }
+
+    #forward-btn {
+        display: none;
+    }
 }

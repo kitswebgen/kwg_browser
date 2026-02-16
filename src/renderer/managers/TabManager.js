@@ -13,10 +13,10 @@ export class TabManager {
     createTab(url = 'ntp.html', options = { active: true }) {
         const id = crypto.randomUUID ? crypto.randomUUID().substring(0, 8) : Math.random().toString(36).substr(2, 9);
         const webview = document.createElement('webview');
-        
+
         // Ensure URL is valid (simple check)
         if (!url) url = 'ntp.html';
-        
+
         webview.src = url;
         webview.setAttribute('allowpopups', '');
         webview.setAttribute('webpreferences', 'contextIsolation=true, sandbox=true');
@@ -42,7 +42,7 @@ export class TabManager {
 
         this._attachEvents(tabData);
         if (options.active) this.switchTab(id);
-        
+
         if (this.callbacks.onTabCountUpdate) this.callbacks.onTabCountUpdate(this.tabs.length);
         this._saveSession();
         return tabData;
@@ -62,6 +62,16 @@ export class TabManager {
             if (this.callbacks.onContextMenu) this.callbacks.onContextMenu(e, tab);
         });
 
+        // Crash Recovery
+        tab.webviewEl.addEventListener('crashed', () => {
+            this.activeTabId === tab.id && this.callbacks.onNotification && this.callbacks.onNotification('⚠️ Tab crashed! Reloading...');
+            tab.webviewEl.reload();
+        });
+
+        tab.webviewEl.addEventListener('unresponsive', () => {
+            this.activeTabId === tab.id && this.callbacks.onNotification && this.callbacks.onNotification('⚠️ Tab unresponsive');
+        });
+
         // Webview events
         tab.webviewEl.addEventListener('did-start-loading', () => {
             tab.tabEl.classList.add('loading');
@@ -78,7 +88,7 @@ export class TabManager {
                 const title = tab.webviewEl.getTitle();
                 const url = tab.webviewEl.getURL();
                 tab.tabEl.querySelector('.tab-title').textContent = title || 'New Tab';
-                
+
                 if (url.startsWith('http')) {
                     try {
                         const hostname = new URL(url).hostname;
@@ -108,7 +118,7 @@ export class TabManager {
         tab.webviewEl.addEventListener('new-window', (e) => this.createTab(e.url));
 
         tab.webviewEl.addEventListener('did-fail-load', (e) => {
-             // -3 is aborted (usually by user), 0 is success in some contexts but here likely fail
+            // -3 is aborted (usually by user), 0 is success in some contexts but here likely fail
             if (e.errorCode === -3 || e.errorCode === 0) return;
             try { if (tab.webviewEl.getURL()?.includes('error.html')) return; } catch (_) { }
             // Using absolute path or relative? renderer.js uses relative 'error.html'
@@ -153,20 +163,23 @@ export class TabManager {
     closeTab(id) {
         const tab = this.tabs.find(t => t.id === id);
         if (!tab) return;
-        if (tab.pinned) { 
-             if(this.callbacks.onNotification) this.callbacks.onNotification('Unpin tab before closing'); 
-             return; 
+        if (tab.pinned) {
+            if (this.callbacks.onNotification) this.callbacks.onNotification('Unpin tab before closing');
+            return;
         }
         const index = this.tabs.indexOf(tab);
         tab.tabEl.remove();
         tab.webviewEl.remove();
         this.tabs.splice(index, 1);
         delete this.zoomLevels[id];
-        
+
         if (this.activeTabId === id) {
             if (this.tabs.length > 0) this.switchTab(this.tabs[Math.min(index, this.tabs.length - 1)].id);
             else this.createTab();
+        } else if (this.tabs.length === 0) {
+            this.createTab();
         }
+
         if (this.callbacks.onTabCountUpdate) this.callbacks.onTabCountUpdate(this.tabs.length);
         this._saveSession();
     }
@@ -182,8 +195,8 @@ export class TabManager {
         if (!tab) return;
         tab.pinned = !tab.pinned;
         tab.tabEl.classList.toggle('pinned', tab.pinned);
-        if(this.callbacks.onNotification) this.callbacks.onNotification(tab.pinned ? '📌 Tab pinned' : '📌 Tab unpinned');
-        
+        if (this.callbacks.onNotification) this.callbacks.onNotification(tab.pinned ? '📌 Tab pinned' : '📌 Tab unpinned');
+
         // Move pinned tabs to the left
         if (tab.pinned && this.tabsContainer.firstChild) {
             this.tabsContainer.insertBefore(tab.tabEl, this.tabsContainer.firstChild);
@@ -197,7 +210,7 @@ export class TabManager {
         try { tab.webviewEl.setAudioMuted(tab.muted); } catch (e) { }
         const audioEl = tab.tabEl.querySelector('.tab-audio-indicator');
         if (audioEl) audioEl.textContent = tab.muted ? '🔇' : '🔊';
-        if(this.callbacks.onNotification) this.callbacks.onNotification(tab.muted ? '🔇 Tab muted' : '🔊 Tab unmuted');
+        if (this.callbacks.onNotification) this.callbacks.onNotification(tab.muted ? '🔇 Tab muted' : '🔊 Tab unmuted');
     }
 
     closeOtherTabs(id) {
@@ -242,11 +255,11 @@ export class TabManager {
     }
 
     getActive() { return this.tabs.find(t => t.id === this.activeTabId) || null; }
-    
+
     // For external navigation control
-    goBack() { const a = this.getActive(); if(a) try { if(a.webviewEl.canGoBack()) a.webviewEl.goBack(); } catch(e){} }
-    goForward() { const a = this.getActive(); if(a) try { if(a.webviewEl.canGoForward()) a.webviewEl.goForward(); } catch(e){} }
-    reload() { const a = this.getActive(); if(a) a.webviewEl.reload(); }
+    goBack() { const a = this.getActive(); if (a) try { if (a.webviewEl.canGoBack()) a.webviewEl.goBack(); } catch (e) { } }
+    goForward() { const a = this.getActive(); if (a) try { if (a.webviewEl.canGoForward()) a.webviewEl.goForward(); } catch (e) { } }
+    reload() { const a = this.getActive(); if (a) a.webviewEl.reload(); }
     loadURL(url) {
         const active = this.getActive();
         if (active) active.webviewEl.loadURL(url);

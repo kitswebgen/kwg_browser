@@ -237,22 +237,38 @@ if (window.electronAPI) {
 }
 
 // Init
+// Init
 async function init() {
     await PM.init();
     UI.init();
-    TM.createTab();
 
     // Restore session
+    let restored = false;
     try {
         if (window.electronAPI) {
             const session = await window.electronAPI.loadSession();
-            if (session?.tabs?.length > 1) {
-                session.tabs.slice(1).filter(url => url.startsWith('http')).forEach(url => {
-                    TM.createTab(url, { active: false });
-                });
+            if (session && session.tabs && session.tabs.length > 0) {
+                // Filter valid http/https URLs or internal pages
+                const validTabs = session.tabs.filter(url => url && (url.startsWith('http') || url.endsWith('.html')));
+                if (validTabs.length > 0) {
+                    restored = true;
+                    // Create first tab active
+                    TM.createTab(validTabs[0], { active: true });
+                    // Create remaining tabs
+                    validTabs.slice(1).forEach(url => TM.createTab(url, { active: false }));
+                }
             }
         }
-    } catch (e) { }
+    } catch (e) { console.error('Session restore failed:', e); }
+
+    // If no session restored, create default tab
+    if (!restored) {
+        TM.createTab();
+    }
+
+    // Initial UI update
+    UI.updateUI();
+    UI.renderBookmarksBar();
 }
 
 init();

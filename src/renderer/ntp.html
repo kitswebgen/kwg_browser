@@ -9,21 +9,23 @@
     <style>
         :root {
             --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
             --text-primary: #ffffff;
-            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-secondary: rgba(255, 255, 255, 0.6);
             --accent-color: #A8C7FA;
+            --card-hover: rgba(255, 255, 255, 0.08);
         }
 
         @media (prefers-color-scheme: light) {
             :root {
-                --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-                --glass-bg: rgba(255, 255, 255, 0.8);
-                --glass-border: rgba(0, 0, 0, 0.05);
+                --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+                --glass-bg: rgba(255, 255, 255, 0.6);
+                --glass-border: rgba(255, 255, 255, 0.4);
                 --text-primary: #1F1F1F;
                 --text-secondary: #5F6368;
                 --accent-color: #0B57D0;
+                --card-hover: rgba(255, 255, 255, 0.8);
             }
         }
 
@@ -38,65 +40,72 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
+            user-select: none;
         }
 
         .container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            animation: fadeIn 0.8s ease-out;
+            width: 100%;
+            max-width: 800px;
+            z-index: 10;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .logo {
-            font-size: 64px;
+        .greeting {
+            font-size: 42px;
             font-weight: 600;
-            margin-bottom: 40px;
-            letter-spacing: -2px;
-            background: linear-gradient(to right, #A8C7FA, #D3E3FD);
+            margin-bottom: 8px;
+            text-align: center;
+            opacity: 0;
+            animation: slideUp 0.8s ease-out forwards;
+        }
+
+        .greeting span {
+            background: linear-gradient(to right, var(--accent-color), #D3E3FD);
             -webkit-background-clip: text;
-            background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .time-display {
+            font-size: 16px;
+            margin-bottom: 48px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            opacity: 0;
+            animation: slideUp 0.8s ease-out 0.1s forwards;
+            letter-spacing: 1px;
         }
 
         .search-container {
+            width: 100%;
+            max-width: 600px;
             position: relative;
-            width: 600px;
-            max-width: 90vw;
+            opacity: 0;
+            animation: slideUp 0.8s ease-out 0.2s forwards;
         }
 
         .search-box {
             width: 100%;
-            height: 56px;
+            height: 60px;
             background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--glass-border);
-            border-radius: 28px;
+            border-radius: 30px;
             display: flex;
             align-items: center;
             padding: 0 24px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         .search-box:hover,
         .search-box:focus-within {
-            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
-            transform: translateY(-2px);
-            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px) scale(1.01);
+            background: var(--card-hover);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            border-color: var(--accent-color);
         }
 
         .search-icon {
@@ -123,15 +132,18 @@
 
         input::placeholder {
             color: var(--text-secondary);
-            font-weight: 300;
+            opacity: 0.7;
         }
 
         .shortcuts {
-            display: flex;
-            gap: 32px;
-            margin-top: 48px;
-            flex-wrap: wrap;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 24px;
+            margin-top: 56px;
+            width: 100%;
+            max-width: 700px;
+            opacity: 0;
+            animation: slideUp 0.8s ease-out 0.3s forwards;
         }
 
         .shortcut {
@@ -150,115 +162,97 @@
         }
 
         .shortcut-icon {
-            width: 56px;
-            height: 56px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transition: all 0.2s;
-        }
-
-        .shortcut:hover .shortcut-icon {
-            background: var(--accent-color);
-            color: #000 !important;
-            border-color: transparent;
-        }
-
-        .shortcut-title {
-            font-size: 12px;
-            font-weight: 400;
-            color: var(--text-secondary);
-        }
-
-        .time-date-container {
-            position: absolute;
-            top: 40px;
-            right: 40px;
-            text-align: right;
-            animation: fadeIn 1s ease-out;
-        }
-
-        #time {
-            font-size: 48px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            letter-spacing: -1px;
-        }
-
-        #date {
-            font-size: 16px;
-            font-weight: 400;
-            opacity: 0.7;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .weather-card {
-            position: absolute;
-            top: 40px;
-            left: 40px;
+            width: 64px;
+            height: 64px;
             background: var(--glass-bg);
             backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--glass-border);
-            padding: 16px 24px;
             border-radius: 20px;
             display: flex;
             align-items: center;
-            gap: 16px;
-            animation: fadeIn 1.2s ease-out;
+            justify-content: center;
+            font-size: 28px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
         }
 
-        .weather-info {
+        .shortcut-icon img {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+        }
+
+        .shortcut:hover .shortcut-icon {
+            background: var(--card-hover);
+            border-color: var(--accent-color);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .shortcut-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: color 0.2s;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .shortcut:hover .shortcut-title {
+            color: var(--text-primary);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Weather Widget */
+        .weather-widget {
+            position: absolute;
+            top: 24px;
+            right: 24px;
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 100px;
+            border: 1px solid var(--glass-border);
+            font-size: 14px;
+            color: var(--text-secondary);
+            cursor: default;
+            transition: all 0.3s;
         }
 
-        .temp {
-            font-size: 24px;
-            font-weight: 600;
-        }
-
-        .desc {
-            font-size: 12px;
-            opacity: 0.7;
-        }
-
-        .loc {
-            font-size: 11px;
-            opacity: 0.5;
-            margin-top: 4px;
-        }
-
-        .weather-icon {
-            font-size: 32px;
+        .weather-widget:hover {
+            background: var(--card-hover);
+            color: var(--text-primary);
         }
     </style>
 </head>
 
 <body>
-    <div class="weather-card">
-        <div class="weather-icon" id="w-icon">☀️</div>
-        <div class="weather-info">
-            <span class="temp" id="w-temp">31°C</span>
-            <span class="desc" id="w-desc">Clear Sky</span>
-            <span class="loc">Akola, Maharashtra</span>
-        </div>
-    </div>
-
-    <div class="time-date-container">
-        <div id="time">12:00 PM</div>
-        <div id="date">Monday, Feb 16</div>
+    <div class="weather-widget">
+        <span id="w-icon">☀️</span>
+        <span id="w-temp">31°C</span>
     </div>
 
     <div class="container">
-        <div class="logo">KITS</div>
+        <div class="greeting" id="greeting">Good Morning</div>
+        <div class="time-display" id="date-display">Monday, Feb 16</div>
 
         <div class="search-container">
             <div class="search-box">
@@ -266,70 +260,82 @@
                     <path
                         d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
                 </svg>
-                <input type="text" id="q" placeholder="Explore the web with KITS..." autofocus>
+                <input type="text" id="q" placeholder="Search the web..." autofocus>
             </div>
         </div>
 
-        <div class="shortcuts">
-            <a href="https://google.com" class="shortcut">
-                <div class="shortcut-icon" style="color: #4285F4;">G</div>
-                <span class="shortcut-title">Google</span>
-            </a>
-            <a href="https://youtube.com" class="shortcut">
-                <div class="shortcut-icon" style="color: #FF0000;">▶</div>
-                <span class="shortcut-title">YouTube</span>
-            </a>
-            <a href="https://github.com" class="shortcut">
-                <div class="shortcut-icon" style="color: #fff;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path
-                            d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                    </svg>
-                </div>
-                <span class="shortcut-title">GitHub</span>
-            </a>
-            <a href="https://twitter.com" class="shortcut">
-                <div class="shortcut-icon" style="color: #1DA1F2;">𝕏</div>
-                <span class="shortcut-title">Twitter</span>
-            </a>
-            <a href="https://chat.openai.com" class="shortcut">
-                <div class="shortcut-icon" style="color: #10a37f;">●</div>
-                <span class="shortcut-title">ChatGPT</span>
-            </a>
-            <a href="https://gmail.com" class="shortcut">
-                <div class="shortcut-icon" style="color: #EA4335;">M</div>
-                <span class="shortcut-title">Gmail</span>
-            </a>
+        <div class="shortcuts" id="shortcuts">
+            <!-- Dynamic Shortcuts will be injected here -->
         </div>
     </div>
 
     <script>
         const input = document.getElementById('q');
-        const timeEl = document.getElementById('time');
-        const dateEl = document.getElementById('date');
+        const greetingEl = document.getElementById('greeting');
+        const dateEl = document.getElementById('date-display');
+        const shortcutsEl = document.getElementById('shortcuts');
 
-        // Update time & date
-        function updateDateTime() {
+        // Update greeting & date
+        function updateTime() {
             const now = new Date();
-            timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+            const hour = now.getHours();
+
+            // Get user name
+            let name = '';
+            try {
+                const profile = JSON.parse(localStorage.getItem('profile') || '{}');
+                if (profile.name) name = `, ${profile.name.split(' ')[0]}`;
+            } catch (e) { }
+
+            let greet = 'Good Evening';
+            if (hour < 12) greet = 'Good Morning';
+            else if (hour < 18) greet = 'Good Afternoon';
+
+            greetingEl.innerHTML = `${greet}<span>${name}</span>`;
+            dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
         }
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
+        updateTime();
 
-        // Simulate weather updates (realism)
-        const weatherConfigs = [
-            { icon: '☀️', temp: '31°C', desc: 'Clear Sky' },
-            { icon: '🌤️', temp: '29°C', desc: 'Mostly Sunny' },
-            { icon: '☀️', temp: '33°C', desc: 'Hot & Dry' }
-        ];
+        // Render Shortcuts
+        function renderShortcuts() {
+            let bookmarks = [];
+            try {
+                bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+            } catch (e) { }
 
-        // Pick one for the current session
-        const currentW = weatherConfigs[Math.floor(Math.random() * weatherConfigs.length)];
-        document.getElementById('w-icon').textContent = currentW.icon;
-        document.getElementById('w-temp').textContent = currentW.temp;
-        document.getElementById('w-desc').textContent = currentW.desc;
+            // Defaults if empty
+            if (bookmarks.length === 0) {
+                bookmarks = [
+                    { title: 'Google', url: 'https://google.com', icon: 'G' },
+                    { title: 'YouTube', url: 'https://youtube.com', icon: '▶' },
+                    { title: 'GitHub', url: 'https://github.com', icon: '⌨' },
+                    { title: 'Twitter', url: 'https://twitter.com', icon: '𝕏' }
+                ];
+            } else {
+                // Take top 4 or random 4 for improved look
+                bookmarks = bookmarks.slice(0, 8);
+            }
 
+            shortcutsEl.innerHTML = bookmarks.map(b => {
+                let iconHtml = `<div class="shortcut-icon">${b.icon || b.title[0]}</div>`;
+                // Try to use favicon if available (from saved bookmarks) or google service
+                if (b.url) {
+                    try {
+                        const domain = new URL(b.url).hostname;
+                        iconHtml = `<div class="shortcut-icon"><img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" onerror="this.parentElement.textContent='${b.title[0]}'"/></div>`;
+                    } catch (e) { }
+                }
+
+                return `
+                <a href="${b.url}" class="shortcut">
+                    ${iconHtml}
+                    <span class="shortcut-title">${b.title}</span>
+                </a>`;
+            }).join('');
+        }
+        renderShortcuts();
+
+        // Search Logic
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const query = input.value.trim();

@@ -184,7 +184,12 @@ export class UIManager {
         });
 
         omnibox.addEventListener('blur', () => setTimeout(() => { suggestionsList.classList.add('hidden'); this.selectedSuggestionIndex = -1; }, 200));
-        omnibox.addEventListener('focus', () => omnibox.select());
+        omnibox.addEventListener('focus', () => {
+            omnibox.select();
+            if (window.innerWidth < 800) {
+                // Maybe hide other elements or expand omnibox if needed, for now just ensure select
+            }
+        });
     }
 
     renderSuggestions(list) {
@@ -218,7 +223,7 @@ export class UIManager {
 
         document.getElementById('new-tab-btn').onclick = () => this.TM.createTab();
         document.getElementById('ai-toggle-btn').onclick = () => this.toggleAIPanel();
-        document.getElementById('theme-btn').onclick = () => this.toggleTheme();
+
         document.getElementById('zen-btn').onclick = () => this.toggleZenMode();
         document.getElementById('reader-btn').onclick = () => this.toggleReaderMode();
         document.getElementById('bookmark-btn').onclick = () => this.bookmarkCurrentPage();
@@ -302,15 +307,7 @@ export class UIManager {
         } catch (e) { this.showNotification('Reader Mode unavailable'); }
     }
 
-    toggleTheme() {
-        const current = document.documentElement.getAttribute('data-theme');
-        const next = current === 'light' ? null : 'light';
-        if (next) document.documentElement.setAttribute('data-theme', next);
-        else document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('kits-theme', next || 'dark');
-        if (window.electronAPI) window.electronAPI.storeSet('theme', next || 'dark');
-        this.showNotification(`🎨 Theme: ${next === 'light' ? 'Light' : 'Dark'}`);
-    }
+
 
     async bookmarkCurrentPage() {
         const active = this.TM.getActive();
@@ -320,25 +317,40 @@ export class UIManager {
             const title = active.webviewEl.getTitle();
             if (!url.startsWith('http')) { this.showNotification('Cannot bookmark this page'); return; }
 
-            let bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+            let bookmarks = [];
+            if (window.electronAPI) {
+                bookmarks = await window.electronAPI.storeGet('bookmarks') || [];
+            } else {
+                bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+            }
+
             const idx = bookmarks.findIndex(b => b.url === url);
             if (idx >= 0) {
                 bookmarks.splice(idx, 1);
-                localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+                if (window.electronAPI) await window.electronAPI.storeSet('bookmarks', bookmarks);
+                else localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
                 this.showNotification(`⭐ Removed: ${title}`);
             } else {
                 bookmarks.push({ title, url, time: Date.now() });
-                localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+                if (window.electronAPI) await window.electronAPI.storeSet('bookmarks', bookmarks);
+                else localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
                 this.showNotification(`⭐ Bookmarked: ${title}`);
             }
             this.renderBookmarksBar();
-        } catch (e) { this.showNotification('Failed to bookmark'); }
+        } catch (e) { console.error(e); this.showNotification('Failed to bookmark'); }
     }
 
-    renderBookmarksBar() {
+    async renderBookmarksBar() {
         const bar = document.getElementById('bookmarks-bar');
         if (!bar) return;
-        const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+
+        let bookmarks = [];
+        if (window.electronAPI) {
+            bookmarks = await window.electronAPI.storeGet('bookmarks') || [];
+        } else {
+            bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+        }
+
         if (bookmarks.length === 0) { bar.classList.add('hidden'); return; }
         bar.classList.remove('hidden');
         bar.innerHTML = '';
