@@ -666,28 +666,28 @@ ipcMain.handle('search-suggestions', async (event, query, engine = 'google') => 
         if (cached?.promise) return await cached.promise;
 
         const compute = async () => {
-        // DuckDuckGo uses a different response shape: [{ phrase: "..." }, ...]
-        if (eng === 'duckduckgo') {
-            const url = `https://duckduckgo.com/ac/?q=${encodeURIComponent(q)}&type=list`;
+            // DuckDuckGo uses a different response shape: [{ phrase: "..." }, ...]
+            if (eng === 'duckduckgo') {
+                const url = `https://duckduckgo.com/ac/?q=${encodeURIComponent(q)}&type=list`;
+                const data = await fetchJson(url);
+                if (!Array.isArray(data)) return [];
+                return data
+                    .map(item => item?.phrase)
+                    .filter(s => typeof s === 'string' && s.trim().length > 0)
+                    .slice(0, 8);
+            }
+
+            // Bing/Google-style: [query, [suggestions...], ...]
+            const url = eng === 'bing'
+                ? `https://api.bing.com/osjson.aspx?query=${encodeURIComponent(q)}`
+                : `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(q)}`;
+
             const data = await fetchJson(url);
             if (!Array.isArray(data)) return [];
-            return data
-                .map(item => item?.phrase)
+            const suggestions = Array.isArray(data[1]) ? data[1] : [];
+            return suggestions
                 .filter(s => typeof s === 'string' && s.trim().length > 0)
                 .slice(0, 8);
-        }
-
-        // Bing/Google-style: [query, [suggestions...], ...]
-        const url = eng === 'bing'
-            ? `https://api.bing.com/osjson.aspx?query=${encodeURIComponent(q)}`
-            : `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(q)}`;
-
-        const data = await fetchJson(url);
-        if (!Array.isArray(data)) return [];
-        const suggestions = Array.isArray(data[1]) ? data[1] : [];
-        return suggestions
-            .filter(s => typeof s === 'string' && s.trim().length > 0)
-            .slice(0, 8);
         };
 
         // Simple cache cap to avoid unbounded growth.
