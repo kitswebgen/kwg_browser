@@ -10,6 +10,7 @@ export class TabManager {
         this.closedTabs = [];
         this.draggingTabId = null;
         this.callbacks = callbacks; // onUpdateUI, onSaveSession, onError, etc.
+        this._saveSessionDebounce = null;
     }
 
     createTab(url = 'ntp.html', options = { active: true }) {
@@ -123,9 +124,12 @@ export class TabManager {
                     try {
                         const hostname = new URL(url).hostname;
                         const iconEl = tab.tabEl.querySelector('.tab-icon');
-                        iconEl.src = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
-                        iconEl.style.display = 'block';
-                        iconEl.onerror = () => { iconEl.style.display = 'none'; };
+                        const hasIcon = !!(iconEl?.getAttribute('src') && iconEl.style.display !== 'none');
+                        if (!hasIcon) {
+                            iconEl.src = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
+                            iconEl.style.display = 'block';
+                            iconEl.onerror = () => { iconEl.style.display = 'none'; };
+                        }
                     } catch (_) { }
                     if (this.callbacks.onLogHistory) this.callbacks.onLogHistory(title, url);
                 }
@@ -169,14 +173,28 @@ export class TabManager {
         });
     }
 
-    async _saveSession() {
+    _saveSession(options = {}) {
         if (!this.callbacks.onSaveSession) return;
-        try {
-            const tabs = this.tabs.map(t => {
-                try { return t.webviewEl.getURL(); } catch (_) { return null; }
-            }).filter(Boolean);
-            this.callbacks.onSaveSession(tabs);
-        } catch (e) { }
+
+        const immediate = options === true || options?.immediate === true;
+        const run = () => {
+            try {
+                const tabs = this.tabs.map(t => {
+                    try { return t.webviewEl.getURL(); } catch (_) { return null; }
+                }).filter(Boolean);
+                this.callbacks.onSaveSession(tabs);
+            } catch (_) { }
+        };
+
+        if (immediate) {
+            if (this._saveSessionDebounce) clearTimeout(this._saveSessionDebounce);
+            this._saveSessionDebounce = null;
+            run();
+            return;
+        }
+
+        if (this._saveSessionDebounce) clearTimeout(this._saveSessionDebounce);
+        this._saveSessionDebounce = setTimeout(run, 350);
     }
 
     switchTab(id) {
@@ -185,7 +203,9 @@ export class TabManager {
             const isActive = t.id === id;
             t.tabEl.classList.toggle('active', isActive);
             t.webviewEl.classList.toggle('active', isActive);
-            if (isActive) t.tabEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if (isActive) {
+                try { t.tabEl.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' }); } catch (_) { }
+            }
         });
         if (this.callbacks.onUpdateUI) this.callbacks.onUpdateUI();
     }
@@ -263,6 +283,7 @@ export class TabManager {
         // Move pinned tabs to the left
         if (tab.pinned && this.tabsContainer.firstChild) {
             this.tabsContainer.insertBefore(tab.tabEl, this.tabsContainer.firstChild);
+            this._syncTabOrderFromDom();
         }
     }
 
@@ -332,7 +353,8 @@ export class TabManager {
         const order = [...this.tabsContainer.children]
             .map(el => (el?.id || '').replace(/^tab-/, ''))
             .filter(Boolean);
-        this.tabs.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+        const indexById = new Map(order.map((id, i) => [id, i]));
+        this.tabs.sort((a, b) => (indexById.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (indexById.get(b.id) ?? Number.MAX_SAFE_INTEGER));
         this._saveSession();
     }
 }

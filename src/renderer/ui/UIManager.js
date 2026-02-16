@@ -8,6 +8,8 @@ export class UIManager {
         this.suggestionDebounce = null;
         this.selectedSuggestionIndex = -1;
         this.findActive = false;
+        this._uiUpdatePending = false;
+        this._clockTimeout = null;
 
         this.elements = {
             omnibox: document.getElementById('omnibox'),
@@ -61,8 +63,20 @@ export class UIManager {
         this.applyTheme(this.theme);
 
         // Global Clock
-        setInterval(() => this.updateGlobalClock(), 1000);
-        this.updateGlobalClock();
+        this.startGlobalClock();
+    }
+
+    startGlobalClock() {
+        if (this._clockTimeout) clearTimeout(this._clockTimeout);
+
+        const tick = () => {
+            this.updateGlobalClock();
+            const now = new Date();
+            const msToNextMinute = ((60 - now.getSeconds()) * 1000) - now.getMilliseconds();
+            this._clockTimeout = setTimeout(tick, Math.max(1_000, msToNextMinute + 25));
+        };
+
+        tick();
     }
 
     showNotification(msg, duration = 3000) {
@@ -84,7 +98,16 @@ export class UIManager {
     }
 
     updateUI() {
-        const active = this.TM.getActive();
+        if (this._uiUpdatePending) return;
+        this._uiUpdatePending = true;
+        requestAnimationFrame(() => {
+            this._uiUpdatePending = false;
+            this._updateUIImmediate();
+        });
+    }
+
+    _updateUIImmediate() {
+        const active = this.TM?.getActive?.();
         if (!active) return;
 
         try {
@@ -241,7 +264,7 @@ export class UIManager {
     renderSuggestions(list) {
         const { suggestionsList, omnibox } = this.elements;
         if (!list || list.length === 0) { suggestionsList.classList.add('hidden'); return; }
-        suggestionsList.innerHTML = '';
+        const frag = document.createDocumentFragment();
         list.slice(0, 8).forEach((raw) => {
             const s = typeof raw === 'string' ? { type: 'search', value: raw, label: raw } : raw;
             const value = String(s?.value ?? s?.label ?? '').trim();
@@ -258,8 +281,9 @@ export class UIManager {
             label.textContent = labelText;
             div.appendChild(label);
             div.onclick = () => { omnibox.value = value; this.navigateOmnibox(); };
-            suggestionsList.appendChild(div);
+            frag.appendChild(div);
         });
+        suggestionsList.replaceChildren(frag);
         suggestionsList.classList.remove('hidden');
     }
 
@@ -550,7 +574,7 @@ export class UIManager {
 
         if (!this.showBookmarksBar || bookmarks.length === 0) { bar.classList.add('hidden'); return; }
         bar.classList.remove('hidden');
-        bar.innerHTML = '';
+        const frag = document.createDocumentFragment();
         bookmarks.slice(0, 12).forEach(bm => {
             let domain = '';
             try { domain = new URL(bm.url).hostname; } catch (_) { }
@@ -566,8 +590,9 @@ export class UIManager {
             btn.appendChild(img);
             btn.appendChild(label);
             btn.onclick = () => { const a = this.TM.getActive(); if (a) a.webviewEl.loadURL(bm.url); else this.TM.createTab(bm.url); };
-            bar.appendChild(btn);
+            frag.appendChild(btn);
         });
+        bar.replaceChildren(frag);
     }
 
     toggleBookmarksBar() {

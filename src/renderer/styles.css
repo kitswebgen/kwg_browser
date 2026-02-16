@@ -1,5 +1,6 @@
 :root {
     /* Google Material Design 3 (approximate dark theme) */
+    color-scheme: dark;
     --md-sys-color-background: #1E1F22;
     /* Deep dark background */
     --md-sys-color-surface: #2B2D31;
@@ -77,6 +78,7 @@ button:focus-visible,
 
 @media (prefers-color-scheme: light) {
     :root {
+        color-scheme: light;
         --md-sys-color-background: #F3F3F3;
         --md-sys-color-surface: #FFFFFF;
         --md-sys-color-surface-container: #E3E3E3;
@@ -110,6 +112,7 @@ button:focus-visible,
 
 /* Manual theme override (Settings → Appearance) */
 :root[data-theme="dark"] {
+    color-scheme: dark;
     --md-sys-color-background: #1E1F22;
     --md-sys-color-surface: #2B2D31;
     --md-sys-color-surface-container: #383A40;
@@ -130,6 +133,7 @@ button:focus-visible,
 }
 
 :root[data-theme="light"] {
+    color-scheme: light;
     --md-sys-color-background: #F3F3F3;
     --md-sys-color-surface: #FFFFFF;
     --md-sys-color-surface-container: #E3E3E3;
@@ -241,7 +245,7 @@ body {
     -webkit-app-region: drag;
     padding: 0 10px;
     gap: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--sys-glass-border);
 }
 
 .window-controls {
@@ -436,7 +440,7 @@ body {
 }
 
 .tab-close-btn:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: var(--sys-glass-element);
 }
 
 .new-tab-btn {
@@ -465,16 +469,16 @@ body {
     align-items: center;
     padding: 0 4px;
     gap: 12px;
-    background: linear-gradient(to right, var(--md-sys-color-surface-container), rgba(255, 255, 255, 0.05));
+    background: linear-gradient(to right, var(--md-sys-color-surface-container), var(--md-sys-color-surface));
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--sys-glass-border);
     /* Match active tab/container */
     border-radius: var(--radius-full);
     /* Floating toolbar look */
     height: 48px;
     margin-bottom: 2px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--sys-elevation-shadow);
 }
 
 .nav-controls {
@@ -560,7 +564,7 @@ body {
 }
 
 .secure-icon:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--sys-glass-element);
     color: var(--md-sys-color-on-surface);
 }
 
@@ -589,7 +593,7 @@ body {
     background-color: var(--md-sys-color-surface-container);
     border-radius: 0 0 16px 16px;
     margin-top: 4px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 18px var(--sys-glass-shadow);
     overflow: hidden;
     z-index: 1000;
 }
@@ -681,7 +685,7 @@ body {
     font-size: 13px;
     line-height: 1.5;
     word-wrap: break-word;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 18px var(--sys-glass-shadow);
     animation: fadeIn 0.3s ease;
 }
 
@@ -710,7 +714,7 @@ body {
     background-color: var(--md-sys-color-surface-container);
     color: var(--md-sys-color-on-surface);
     border-bottom-left-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--sys-glass-border);
 }
 
 .ai-input-wrapper {
@@ -769,7 +773,7 @@ body {
 .webview-container {
     flex-grow: 1;
     position: relative;
-    background-color: white;
+    background-color: var(--md-sys-color-surface);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     overflow: hidden;
     margin: 0 8px;
@@ -966,12 +970,18 @@ webview.active {
     color: var(--md-sys-color-on-surface);
     font-size: 14px;
     outline: none;
-    transition: border-color 0.2s, background 0.2s;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
 .kits-input:focus {
     border-color: var(--md-sys-color-primary);
     background: var(--md-sys-color-surface-container);
+    box-shadow: 0 0 0 3px var(--sys-focus-ring);
+}
+
+.kits-input::placeholder {
+    color: var(--md-sys-color-on-surface-variant);
+    opacity: 0.65;
 }
 
 /* --- Command Palette --- */
@@ -989,7 +999,7 @@ webview.active {
     display: flex;
     align-items: center;
     padding: 16px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--sys-glass-border);
 }
 
 .palette-icon {
@@ -1002,7 +1012,7 @@ webview.active {
 #palette-input {
     background: transparent;
     border: none;
-    color: white;
+    color: var(--md-sys-color-on-surface);
     font-size: 16px;
     width: 100%;
     outline: none;
@@ -1034,17 +1044,17 @@ webview.active {
 
 .palette-item:hover,
 .palette-item.active {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--sys-glass-highlight);
 }
 
 .palette-item.active {
-    border: 1px solid rgba(168, 199, 250, 0.2);
+    border: 1px solid color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent);
 }
 
 .p-item-icon {
     width: 28px;
     height: 28px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--sys-glass-highlight);
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -1058,7 +1068,7 @@ webview.active {
 }
 
 kbd {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--sys-glass-element);
     color: var(--md-sys-color-on-surface-variant);
     font-size: 10px;
     padding: 2px 6px;
@@ -1079,11 +1089,11 @@ kbd {
 }
 
 .stat-card {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--sys-glass-highlight);
     padding: 20px;
     border-radius: 16px;
     text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--sys-glass-border);
 }
 
 .stat-value {
@@ -1107,7 +1117,7 @@ kbd {
     display: flex;
     justify-content: space-between;
     padding: 10px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--sys-glass-border);
     font-size: 13px;
 }
 
@@ -1189,7 +1199,7 @@ kbd {
     border-radius: 6px;
     margin-left: 8px;
     padding: 0 4px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--sys-glass-border);
 }
 
 /* --- Download Toast --- */
@@ -1252,7 +1262,7 @@ kbd {
 .download-progress-bar {
     width: 100%;
     height: 4px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--sys-glass-element);
     border-radius: 2px;
     overflow: hidden;
 }
@@ -1283,14 +1293,14 @@ kbd {
     gap: 12px;
     padding: 12px 12px;
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--sys-glass-highlight);
+    border: 1px solid var(--sys-glass-border);
     transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
 .download-item:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(168, 199, 250, 0.25);
+    background: var(--sys-glass-element);
+    border-color: color-mix(in srgb, var(--md-sys-color-primary) 35%, var(--sys-glass-border));
     transform: translateY(-1px);
 }
 
@@ -1301,8 +1311,8 @@ kbd {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--sys-glass-element);
+    border: 1px solid var(--sys-glass-border);
     flex: 0 0 auto;
     font-size: 16px;
 }
@@ -1341,8 +1351,8 @@ kbd {
 }
 
 .download-action {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--sys-glass-element);
+    border: 1px solid var(--sys-glass-border);
     color: var(--md-sys-color-on-surface);
     padding: 6px 10px;
     border-radius: 10px;
@@ -1353,17 +1363,17 @@ kbd {
 }
 
 .download-action:hover {
-    background: rgba(255, 255, 255, 0.10);
-    border-color: rgba(168, 199, 250, 0.25);
+    background: var(--sys-glass-highlight);
+    border-color: color-mix(in srgb, var(--md-sys-color-primary) 35%, var(--sys-glass-border));
 }
 
 .download-badge {
     font-size: 10px;
     padding: 2px 8px;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid var(--sys-glass-border);
     color: var(--md-sys-color-on-surface-variant);
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--sys-glass-highlight);
 }
 
 .download-badge.completed {
@@ -1385,30 +1395,6 @@ kbd {
     background: rgba(234, 67, 53, 0.08);
 }
 
-/* --- Login Inputs --- */
-.kits-input {
-    width: 100%;
-    padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: var(--md-sys-color-on-surface);
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.3s, box-shadow 0.3s;
-    font-family: inherit;
-}
-
-.kits-input:focus {
-    border-color: var(--md-sys-color-primary);
-    box-shadow: 0 0 0 3px rgba(168, 199, 250, 0.15);
-}
-
-.kits-input::placeholder {
-    color: var(--md-sys-color-on-surface-variant);
-    opacity: 0.5;
-}
-
 /* --- Icon Button (Bookmark Star in Omnibox) --- */
 .icon-btn {
     background: none;
@@ -1427,12 +1413,12 @@ kbd {
 
 .icon-btn:hover {
     color: var(--md-sys-color-primary);
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--sys-glass-element);
 }
 
 .icon-btn.bookmarked {
     color: var(--md-sys-color-primary);
-    background: rgba(168, 199, 250, 0.12);
+    background: color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent);
 }
 
 .icon-btn.bookmarked svg {
@@ -1456,7 +1442,7 @@ kbd {
 }
 
 .close-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--sys-glass-element);
     color: var(--md-sys-color-on-surface);
 }
 
@@ -1495,7 +1481,7 @@ body.zen-mode .main-content {
 }
 
 .bookmarks-bar-item:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--sys-glass-element);
     color: var(--md-sys-color-on-surface);
 }
 
@@ -1534,12 +1520,12 @@ body.zen-mode .main-content {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(43, 45, 49, 0.95);
+    background: var(--sys-glass-bg);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--sys-glass-border);
     border-radius: 12px;
     padding: 8px 14px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--sys-elevation-shadow);
 }
 
 #find-input {
@@ -1574,7 +1560,7 @@ body.zen-mode .main-content {
 }
 
 .find-nav-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--sys-glass-element);
     color: var(--md-sys-color-on-surface);
 }
 
@@ -1584,16 +1570,16 @@ body.zen-mode .main-content {
     bottom: 40px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(43, 45, 49, 0.95);
+    background: var(--sys-glass-bg);
     backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--sys-glass-border);
     border-radius: 10px;
     padding: 8px 20px;
     font-size: 14px;
     font-weight: 600;
     color: var(--md-sys-color-primary);
     z-index: 9500;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--sys-elevation-shadow);
     animation: fadeIn 0.2s ease;
     pointer-events: none;
 }
@@ -1605,13 +1591,13 @@ body.zen-mode .main-content {
 /* --- Tab Context Menu --- */
 .tab-context-menu {
     position: fixed;
-    background: rgba(35, 37, 41, 0.98);
+    background: var(--sys-glass-bg);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--sys-glass-border);
     border-radius: 12px;
     padding: 6px;
     z-index: 9999;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    box-shadow: var(--sys-elevation-shadow);
     min-width: 200px;
     animation: modalPop 0.15s ease;
 }
@@ -1622,13 +1608,13 @@ body.zen-mode .main-content {
 
 .app-menu {
     position: fixed;
-    background: rgba(35, 37, 41, 0.98);
+    background: var(--sys-glass-bg);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    border: 1px solid var(--sys-glass-border);
     border-radius: 14px;
     padding: 6px;
     z-index: 9999;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    box-shadow: var(--sys-elevation-shadow);
     min-width: 240px;
     animation: modalPop 0.15s ease;
 }
@@ -1656,12 +1642,12 @@ body.zen-mode .main-content {
 }
 
 .app-menu-item:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--sys-glass-element);
 }
 
 .app-menu-sep {
     height: 1px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--sys-glass-border);
     margin: 4px 8px;
 }
 
@@ -1678,7 +1664,7 @@ body.zen-mode .main-content {
 }
 
 .ctx-item:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--sys-glass-element);
 }
 
 .ctx-item.danger {
@@ -1691,7 +1677,7 @@ body.zen-mode .main-content {
 
 .ctx-separator {
     height: 1px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--sys-glass-border);
     margin: 4px 8px;
 }
 
@@ -1786,13 +1772,13 @@ body.zen-mode .main-content {
 }
 
 .tab:hover {
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(to bottom, var(--sys-glass-element), var(--sys-glass-highlight));
+    border-top: 1px solid var(--sys-glass-border);
 }
 
 .tab.active {
     background: var(--md-sys-color-surface);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--sys-glass-border);
     border-bottom: none;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
     position: relative;
@@ -1844,8 +1830,8 @@ body.zen-mode .main-content {
 
 /* Context Menu Polish */
 .tab-context-menu {
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--sys-glass-border);
+    box-shadow: var(--sys-elevation-shadow);
 }
 
 /* Webview Background to prevent flash */

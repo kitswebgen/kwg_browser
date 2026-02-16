@@ -648,12 +648,24 @@ function fetchJson(url, timeoutMs = 2500) {
     });
 }
 
+// Omnibox suggestions cache (avoid repeated network calls while typing)
+const SUGGESTION_CACHE_TTL_MS = 30_000;
+const suggestionCache = new Map(); // key -> { ts, data } | { ts, promise }
+
 ipcMain.handle('search-suggestions', async (event, query, engine = 'google') => {
     try {
         const q = sanitize(String(query || '').trim()).slice(0, 120);
         if (q.length < 2) return [];
 
         const eng = String(engine || 'google').toLowerCase();
+        const key = `${eng}:${q}`;
+        const now = Date.now();
+
+        const cached = suggestionCache.get(key);
+        if (cached?.data && (now - cached.ts) < SUGGESTION_CACHE_TTL_MS) return cached.data;
+        if (cached?.promise) return await cached.promise;
+
+        const compute = async () => {
         // DuckDuckGo uses a different response shape: [{ phrase: "..." }, ...]
         if (eng === 'duckduckgo') {
             const url = `https://duckduckgo.com/ac/?q=${encodeURIComponent(q)}&type=list`;
@@ -676,6 +688,16 @@ ipcMain.handle('search-suggestions', async (event, query, engine = 'google') => 
         return suggestions
             .filter(s => typeof s === 'string' && s.trim().length > 0)
             .slice(0, 8);
+        };
+
+        // Simple cache cap to avoid unbounded growth.
+        if (suggestionCache.size > 250) suggestionCache.clear();
+
+        const promise = compute();
+        suggestionCache.set(key, { ts: now, promise });
+        const result = await promise;
+        suggestionCache.set(key, { ts: Date.now(), data: result });
+        return result;
     } catch (e) {
         return [];
     }

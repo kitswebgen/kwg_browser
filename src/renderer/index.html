@@ -144,7 +144,7 @@
                         <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
                 </button>
-                <div style="width: 24px; height: 1px; background: rgba(255,255,255,0.05); margin: 8px 0;"></div>
+                <div style="width: 24px; height: 1px; background: var(--sys-glass-border); margin: 8px 0;"></div>
                 <button class="side-item" title="Privacy Dashboard" id="side-privacy-btn">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
@@ -156,7 +156,7 @@
                         <path d="M6 21a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3v12a3 3 0 0 0 3 3z"></path>
                     </svg>
                 </button>
-                <div style="width: 24px; height: 1px; background: rgba(255,255,255,0.05); margin: 8px 0;"></div>
+                <div style="width: 24px; height: 1px; background: var(--sys-glass-border); margin: 8px 0;"></div>
                 <button class="side-item" title="AI Hub" id="side-ai-btn" style="color: var(--accent-color);">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path
@@ -413,14 +413,14 @@
 
                 <!-- Divider -->
                 <div style="display:flex; align-items:center; gap:12px; margin:24px 0 16px;">
-                    <div style="flex:1; height:1px; background:rgba(255,255,255,0.1);"></div>
+                    <div style="flex:1; height:1px; background:var(--sys-glass-border);"></div>
                     <span style="font-size:11px; opacity:0.4; text-transform:uppercase; letter-spacing:1px;">or</span>
-                    <div style="flex:1; height:1px; background:rgba(255,255,255,0.1);"></div>
+                    <div style="flex:1; height:1px; background:var(--sys-glass-border);"></div>
                 </div>
 
                 <!-- Google search shortcut button -->
                 <button id="google-search-btn"
-                    style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:transparent; color:var(--md-sys-color-on-surface); cursor:pointer; font-size:13px;">
+                    style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:10px; border-radius:8px; border:1px solid var(--sys-glass-border); background:transparent; color:var(--md-sys-color-on-surface); cursor:pointer; font-size:13px;">
                     <svg width="18" height="18" viewBox="0 0 24 24">
                         <path
                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
@@ -574,7 +574,7 @@
                 <div style="font-size:14px; opacity:0.7; margin-top:8px;">Security Score: <strong
                         id="security-score-text">10/10</strong></div>
                 <div id="security-score-bar"
-                    style="width:200px; height:6px; background:rgba(255,255,255,0.08); border-radius:4px; margin:8px auto; overflow:hidden;">
+                    style="width:200px; height:6px; background:var(--sys-glass-element); border-radius:4px; margin:8px auto; overflow:hidden;">
                     <div id="security-score-fill"
                         style="height:100%; width:100%; background:linear-gradient(90deg,#34A853,#4CAF50); border-radius:4px; transition:width 0.5s;">
                     </div>
@@ -584,19 +584,19 @@
             <!-- Dashboard Tabs -->
             <div style="display:flex; gap:4px; padding:0 12px; margin-bottom:16px; overflow-x:auto;">
                 <button class="sec-tab active" data-sec-tab="security"
-                    style="padding:8px 16px; border:none; background:rgba(168,199,250,0.15); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">🔒
+                    style="padding:8px 16px; border:none; background:color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">🔒
                     Security</button>
                 <button class="sec-tab" data-sec-tab="hardware"
-                    style="padding:8px 16px; border:none; background:rgba(255,255,255,0.04); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">💻
+                    style="padding:8px 16px; border:none; background:var(--sys-glass-highlight); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">💻
                     Hardware</button>
                 <button class="sec-tab" data-sec-tab="network"
-                    style="padding:8px 16px; border:none; background:rgba(255,255,255,0.04); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">🌐
+                    style="padding:8px 16px; border:none; background:var(--sys-glass-highlight); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">🌐
                     Network</button>
                 <button class="sec-tab" data-sec-tab="storage"
-                    style="padding:8px 16px; border:none; background:rgba(255,255,255,0.04); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">💾
+                    style="padding:8px 16px; border:none; background:var(--sys-glass-highlight); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">💾
                     Storage</button>
                 <button class="sec-tab" data-sec-tab="browser"
-                    style="padding:8px 16px; border:none; background:rgba(255,255,255,0.04); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">🌍
+                    style="padding:8px 16px; border:none; background:var(--sys-glass-highlight); color:var(--md-sys-color-on-surface); border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;">🌍
                     Browser</button>
             </div>
 

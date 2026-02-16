@@ -262,15 +262,15 @@ function renderProfileSection(profile) {
             </div>`;
         document.getElementById('logout-btn').onclick = async () => { await PM.logout(); UI.showNotification('Signed out'); };
         if (userBtn) userBtn.style.color = '#A8C7FA';
-    } else {
-        section.innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px; padding:8px 0;">
-                <div style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; opacity:0.5;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                </div>
-                <div style="flex:1; opacity:0.7; font-size:13px;">Not signed in</div>
-                <button id="profile-login-btn" class="kits-btn" style="background:#A8C7FA; color:#003355; padding:6px 14px; border-radius:8px; border:none; cursor:pointer; font-size:12px; font-weight:600;">Sign In</button>
-            </div>`;
+	    } else {
+	        section.innerHTML = `
+	            <div style="display:flex; align-items:center; gap:12px; padding:8px 0;">
+	                <div style="width:36px; height:36px; border-radius:50%; background:var(--sys-glass-highlight); display:flex; align-items:center; justify-content:center; opacity:0.5;">
+	                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+	                </div>
+	                <div style="flex:1; opacity:0.7; font-size:13px;">Not signed in</div>
+	                <button id="profile-login-btn" class="kits-btn" style="background:var(--md-sys-color-primary); color:var(--md-sys-color-on-primary); padding:6px 14px; border-radius:8px; border:none; cursor:pointer; font-size:12px; font-weight:600;">Sign In</button>
+	            </div>`;
         const item = document.getElementById('profile-login-btn');
         if (item) {
             item.onclick = () => {
@@ -352,18 +352,18 @@ window.openSystemSecurityDashboard = async function () {
     // (Abbreviated for successful write_to_file, logic is repetitive DOM updates)
 }
 
-window.openDeviceInfoModal = async function () {
-    document.getElementById('device-info-modal').classList.remove('hidden');
-    if (!window.electronAPI) return;
-    const info = await window.electronAPI.getDeviceInfo();
-    const displaysHtml = info.displays.map((d, i) => `
-        <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:14px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.06);">
-            <div style="font-weight:600; font-size:14px; margin-bottom:8px;">${i === 0 ? '🖥️' : '📺'} ${d.label || `Display ${i + 1}`}</div>
-            <div style="font-size:12px;">${d.resolution} @ ${d.refreshRate}Hz</div>
-        </div>
-    `).join('');
-    document.getElementById('device-info-content').innerHTML = displaysHtml;
-}
+	window.openDeviceInfoModal = async function () {
+	    document.getElementById('device-info-modal').classList.remove('hidden');
+	    if (!window.electronAPI) return;
+	    const info = await window.electronAPI.getDeviceInfo();
+	    const displaysHtml = info.displays.map((d, i) => `
+	        <div style="background:var(--sys-glass-highlight); border-radius:12px; padding:14px; margin-bottom:10px; border:1px solid var(--sys-glass-border);">
+	            <div style="font-weight:600; font-size:14px; margin-bottom:8px;">${i === 0 ? '🖥️' : '📺'} ${d.label || `Display ${i + 1}`}</div>
+	            <div style="font-size:12px;">${d.resolution} @ ${d.refreshRate}Hz</div>
+	        </div>
+	    `).join('');
+	    document.getElementById('device-info-content').innerHTML = displaysHtml;
+	}
 
 // Menu Action Listener
 if (window.electronAPI) {
@@ -408,7 +408,7 @@ if (window.electronAPI) {
 
     window.electronAPI.onPowerEvent((data) => {
         UI.showNotification(data.message, 3000);
-        if (data.type === 'suspend') TM._saveSession();
+        if (data.type === 'suspend') TM._saveSession({ immediate: true });
     });
 }
 
