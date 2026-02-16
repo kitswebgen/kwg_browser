@@ -93,7 +93,7 @@ export class UIManager {
             this._dbSyncTimers.bookmarks = setTimeout(async () => {
                 this._dbSyncTimers.bookmarks = null;
                 await this.getBookmarks();
-                this.renderBookmarksBar();
+                this.renderBookmarksBar(this._bookmarksCache);
                 this.updateUI();
             }, 80);
         };
@@ -214,6 +214,7 @@ export class UIManager {
             const webview = active.webviewEl;
             const url = webview.getURL();
             const isInternal = !url.startsWith('http');
+            const isIncognito = !!active.incognito;
             const { omnibox, backBtn, forwardBtn, secureIcon } = this.elements;
 
             if (document.activeElement !== omnibox) {
@@ -235,7 +236,7 @@ export class UIManager {
                     secureIcon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
                 }
                 if (sessionInfo) {
-                    sessionInfo.textContent = new URL(url).hostname;
+                    sessionInfo.textContent = `${isIncognito ? '🕶 ' : ''}${new URL(url).hostname}`;
                     sessionInfo.style.color = '#81C995';
                 }
             } else if (url.startsWith('http://')) {
@@ -246,7 +247,7 @@ export class UIManager {
                     secureIcon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
                 }
                 if (sessionInfo) {
-                    sessionInfo.textContent = '⚠ Not Secure';
+                    sessionInfo.textContent = `${isIncognito ? '🕶 ' : ''}⚠ Not Secure`;
                     sessionInfo.style.color = '#FEBC2E';
                 }
             } else {
@@ -257,7 +258,8 @@ export class UIManager {
                     secureIcon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
                 }
                 if (sessionInfo) {
-                    sessionInfo.textContent = this.PM.isLoggedIn() ? `Signed in as ${this.PM.profile.name}` : 'KITS Browser';
+                    if (isIncognito) sessionInfo.textContent = '🕶 Incognito';
+                    else sessionInfo.textContent = this.PM.isLoggedIn() ? `Signed in as ${this.PM.profile.name}` : 'KITS Browser';
                     sessionInfo.style.color = '#E3E3E3';
                 }
             }
@@ -747,20 +749,23 @@ export class UIManager {
                 document.getElementById('bookmark-btn')?.classList.add('bookmarked');
                 this.showNotification(`⭐ Bookmarked: ${title}`);
             }
-            this.renderBookmarksBar();
+            this.renderBookmarksBar(this._bookmarksCache);
         } catch (e) { console.error(e); this.showNotification('Failed to bookmark'); }
     }
 
-    async renderBookmarksBar() {
+    async renderBookmarksBar(bookmarks = null) {
         const bar = document.getElementById('bookmarks-bar');
         if (!bar) return;
 
-        const bookmarks = await this.getBookmarks();
+        let list = Array.isArray(bookmarks) ? bookmarks : (Array.isArray(this._bookmarksCache) ? this._bookmarksCache : []);
+        if (!Array.isArray(bookmarks) && (!Array.isArray(this._bookmarksCache) || this._bookmarksCache.length === 0)) {
+            try { list = await this.getBookmarks(); } catch (_) { list = []; }
+        }
 
-        if (!this.showBookmarksBar || bookmarks.length === 0) { bar.classList.add('hidden'); return; }
+        if (!this.showBookmarksBar || list.length === 0) { bar.classList.add('hidden'); return; }
         bar.classList.remove('hidden');
         const frag = document.createDocumentFragment();
-        bookmarks.slice(0, 12).forEach(bm => {
+        list.slice(0, 12).forEach(bm => {
             let domain = '';
             try { domain = new URL(bm.url).hostname; } catch (_) { }
             const btn = document.createElement('button');
