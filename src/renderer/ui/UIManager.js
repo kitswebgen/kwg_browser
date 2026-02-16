@@ -1,4 +1,6 @@
 
+import { db } from '../db.js';
+
 export class UIManager {
     constructor(tabManager, profileManager) {
         this.TM = tabManager;
@@ -10,6 +12,10 @@ export class UIManager {
         this.findActive = false;
         this._uiUpdatePending = false;
         this._clockTimeout = null;
+        this._bookmarksCache = [];
+        this._bookmarkUrlSet = new Set();
+        this._dbChannel = null;
+        this._dbSyncTimers = { bookmarks: null, kv: null };
 
         this.elements = {
             omnibox: document.getElementById('omnibox'),
@@ -62,8 +68,102 @@ export class UIManager {
         if (this.elements.themeSelect) this.elements.themeSelect.value = this.theme;
         this.applyTheme(this.theme);
 
+        // Hydrate preferences/bookmarks from IndexedDB if available.
+        this.hydrateFromDB();
+
+        // Keep UI in sync with internal pages (webviews) that also write to IndexedDB.
+        this.setupDbBroadcastSync();
+
         // Global Clock
         this.startGlobalClock();
+    }
+
+    setupDbBroadcastSync() {
+        if (this._dbChannel) return;
+
+        let bc = null;
+        try { bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('kits-db') : null; }
+        catch (_) { bc = null; }
+        if (!bc) return;
+
+        this._dbChannel = bc;
+
+        const scheduleBookmarks = () => {
+            if (this._dbSyncTimers.bookmarks) clearTimeout(this._dbSyncTimers.bookmarks);
+            this._dbSyncTimers.bookmarks = setTimeout(async () => {
+                this._dbSyncTimers.bookmarks = null;
+                await this.getBookmarks();
+                this.renderBookmarksBar();
+                this.updateUI();
+            }, 80);
+        };
+
+        const scheduleKv = () => {
+            if (this._dbSyncTimers.kv) clearTimeout(this._dbSyncTimers.kv);
+            this._dbSyncTimers.kv = setTimeout(async () => {
+                this._dbSyncTimers.kv = null;
+                await this._syncPrefsFromDB();
+            }, 50);
+        };
+
+        bc.addEventListener('message', (e) => {
+            const msg = e?.data || {};
+            const type = msg?.type;
+            if (type === 'bookmarks-changed') scheduleBookmarks();
+            if (type === 'kv-changed') scheduleKv();
+        });
+    }
+
+    async _syncPrefsFromDB() {
+        if (!db?.supported?.()) return;
+        try {
+            const storedEngine = await db.getKV('searchEngine', null);
+            if (storedEngine && typeof storedEngine === 'string') this.currentSearchEngine = storedEngine;
+
+            const storedTheme = await db.getKV('theme', null);
+            if (storedTheme && typeof storedTheme === 'string') this.theme = storedTheme;
+
+            const storedShow = await db.getKV('showBookmarksBar', null);
+            if (typeof storedShow === 'boolean') this.showBookmarksBar = storedShow;
+
+            try { localStorage.setItem('searchEngine', this.currentSearchEngine); } catch (_) { }
+            try { localStorage.setItem('theme', this.theme); } catch (_) { }
+            try { localStorage.setItem('showBookmarksBar', String(this.showBookmarksBar)); } catch (_) { }
+
+            if (this.elements.engineSelect) this.elements.engineSelect.value = this.currentSearchEngine;
+            if (this.elements.themeSelect) this.elements.themeSelect.value = this.theme;
+            this.applyTheme(this.theme);
+            this.renderBookmarksBar();
+            this.updateUI();
+        } catch (_) { }
+    }
+
+    async hydrateFromDB() {
+        if (!db?.supported?.()) return;
+
+        try {
+            const storedEngine = await db.getKV('searchEngine', null);
+            if (storedEngine && typeof storedEngine === 'string') this.currentSearchEngine = storedEngine;
+
+            const storedTheme = await db.getKV('theme', null);
+            if (storedTheme && typeof storedTheme === 'string') this.theme = storedTheme;
+
+            const storedShow = await db.getKV('showBookmarksBar', null);
+            if (typeof storedShow === 'boolean') this.showBookmarksBar = storedShow;
+
+            // Keep localStorage in sync for internal pages and quick access.
+            try { localStorage.setItem('searchEngine', this.currentSearchEngine); } catch (_) { }
+            try { localStorage.setItem('theme', this.theme); } catch (_) { }
+            try { localStorage.setItem('showBookmarksBar', String(this.showBookmarksBar)); } catch (_) { }
+
+            if (this.elements.engineSelect) this.elements.engineSelect.value = this.currentSearchEngine;
+            if (this.elements.themeSelect) this.elements.themeSelect.value = this.theme;
+            this.applyTheme(this.theme);
+
+            await this.getBookmarks();
+            this.renderBookmarksBar();
+            this.updateUI();
+        } catch (_) { }
     }
 
     startGlobalClock() {
@@ -310,7 +410,7 @@ export class UIManager {
 
         // Bookmarks first
         try {
-            const bookmarks = this._readLocalArray('bookmarks');
+            const bookmarks = this._bookmarksCache?.length ? this._bookmarksCache : this._readLocalArray('bookmarks');
             for (const bm of bookmarks) {
                 if (out.length >= 4) break;
                 const title = String(bm?.title || '').toLowerCase();
@@ -548,17 +648,15 @@ export class UIManager {
             const title = active.webviewEl.getTitle();
             if (!url.startsWith('http')) { this.showNotification('Cannot bookmark this page'); return; }
 
-            const bookmarks = await this.getBookmarks();
-
-            const idx = bookmarks.findIndex(b => b.url === url);
-            if (idx >= 0) {
-                bookmarks.splice(idx, 1);
-                await this.setBookmarks(bookmarks);
+            const already = this._bookmarkUrlSet.has(url) || await db.isBookmarked(url);
+            if (already) {
+                await db.removeBookmark(url);
+                await this.getBookmarks();
                 document.getElementById('bookmark-btn')?.classList.remove('bookmarked');
                 this.showNotification(`⭐ Removed: ${title}`);
             } else {
-                bookmarks.push({ title, url, time: Date.now() });
-                await this.setBookmarks(bookmarks);
+                await db.upsertBookmark({ title, url, time: Date.now() });
+                await this.getBookmarks();
                 document.getElementById('bookmark-btn')?.classList.add('bookmarked');
                 this.showNotification(`⭐ Bookmarked: ${title}`);
             }
@@ -598,16 +696,14 @@ export class UIManager {
     toggleBookmarksBar() {
         this.showBookmarksBar = !this.showBookmarksBar;
         try { localStorage.setItem('showBookmarksBar', String(this.showBookmarksBar)); } catch (_) { }
+        db.setKV('showBookmarksBar', this.showBookmarksBar).catch(() => { });
         this.renderBookmarksBar();
         this.showNotification(this.showBookmarksBar ? 'Bookmarks bar shown' : 'Bookmarks bar hidden');
     }
 
     isBookmarked(url) {
         if (!url || typeof url !== 'string') return false;
-        try {
-            const list = this._readLocalArray('bookmarks');
-            return list.some(b => b?.url === url);
-        } catch (_) { return false; }
+        return this._bookmarkUrlSet.has(url);
     }
 
     applyTheme(mode) {
@@ -644,32 +740,32 @@ export class UIManager {
     }
 
     async getBookmarks() {
-        const local = this._readLocalArray('bookmarks');
-        let stored = [];
-        if (window.electronAPI) {
-            try {
-                const v = await window.electronAPI.storeGet('bookmarks');
-                stored = Array.isArray(v) ? v : [];
-            } catch (_) { stored = []; }
-        }
+        let list = [];
+        try { list = await db.getBookmarks({ limit: 5000 }); } catch (_) { list = []; }
 
-        const merged = this._mergeBookmarks(local, stored);
-
-        // Sync to localStorage for internal pages (bookmarks.html) and to store for persistence.
-        try { localStorage.setItem('bookmarks', JSON.stringify(merged)); } catch (_) { }
-        if (window.electronAPI) {
-            try { await window.electronAPI.storeSet('bookmarks', merged); } catch (_) { }
-        }
-        return merged;
-    }
-
-    async setBookmarks(bookmarks) {
-        const list = Array.isArray(bookmarks) ? bookmarks : [];
+        // Keep localStorage/electron-store in sync for robustness + legacy pages.
         try { localStorage.setItem('bookmarks', JSON.stringify(list)); } catch (_) { }
         if (window.electronAPI) {
             try { await window.electronAPI.storeSet('bookmarks', list); } catch (_) { }
         }
+
+        this._bookmarksCache = list;
+        this._bookmarkUrlSet = new Set(list.map(b => b.url));
         return list;
+    }
+
+    async setBookmarks(bookmarks) {
+        const list = Array.isArray(bookmarks) ? bookmarks : [];
+        let normalized = list;
+        try { normalized = await db.setBookmarks(list); } catch (_) { normalized = list; }
+        try { localStorage.setItem('bookmarks', JSON.stringify(normalized)); } catch (_) { }
+        if (window.electronAPI) {
+            try { await window.electronAPI.storeSet('bookmarks', normalized); } catch (_) { }
+        }
+
+        this._bookmarksCache = normalized;
+        this._bookmarkUrlSet = new Set(normalized.map(b => b.url));
+        return normalized;
     }
 
     showSiteInfo() {
@@ -1094,6 +1190,7 @@ export class UIManager {
                 this.currentSearchEngine = e.target.value;
                 localStorage.setItem('searchEngine', this.currentSearchEngine);
                 if (window.electronAPI) window.electronAPI.storeSet('searchEngine', this.currentSearchEngine);
+                db.setKV('searchEngine', this.currentSearchEngine).catch(() => { });
                 this.showNotification(`🔍 Search engine: ${e.target.options[e.target.selectedIndex].text}`);
                 this.updateUI();
             };
@@ -1105,6 +1202,7 @@ export class UIManager {
                 this.applyTheme(mode);
                 localStorage.setItem('theme', this.theme);
                 if (window.electronAPI) window.electronAPI.storeSet('theme', this.theme);
+                db.setKV('theme', this.theme).catch(() => { });
                 this.showNotification(`🎨 Theme: ${this.theme}`);
             };
 

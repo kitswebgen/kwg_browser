@@ -31,6 +31,28 @@
             }
         }
 
+        :root[data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #A8C7FA;
+            --card-hover: rgba(255, 255, 255, 0.08);
+            --surface: rgba(255, 255, 255, 0.05);
+        }
+
+        :root[data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-primary: #1F1F1F;
+            --text-secondary: #5F6368;
+            --accent-color: #0B57D0;
+            --card-hover: rgba(255, 255, 255, 0.8);
+            --surface: rgba(255, 255, 255, 0.5);
+        }
+
         body {
             background: var(--bg-gradient);
             color: var(--text-primary);
@@ -208,35 +230,67 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { db } from './db.js';
+
         const container = document.getElementById('history-container');
         const searchInput = document.getElementById('search');
+        const clearBtn = document.getElementById('clear-history');
 
-        let history = [];
-        try {
-            history = JSON.parse(localStorage.getItem('browsing-history') || '[]');
-        } catch (e) { }
+        const bc = (() => {
+            try { return typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('kits-db') : null; }
+            catch (_) { return null; }
+        })();
 
-        function renderHistory(filter = '') {
-            const filtered = history.filter(h =>
-                h.title.toLowerCase().includes(filter.toLowerCase()) ||
-                h.url.toLowerCase().includes(filter.toLowerCase())
-            );
+        function applyTheme(theme) {
+            const mode = String(theme || 'system').toLowerCase();
+            if (mode === 'dark' || mode === 'light') document.documentElement.dataset.theme = mode;
+            else document.documentElement.removeAttribute('data-theme');
+        }
 
-            if (filtered.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align:center; padding:40px; opacity:0.6;">
-                        ${history.length === 0 ? 'No history yet.' : 'No matches found.'}
-                    </div>`;
+        async function loadThemePreference() {
+            let theme = null;
+            try { theme = localStorage.getItem('theme'); } catch (_) { theme = null; }
+            if (!theme && db?.supported?.()) {
+                try { theme = await db.getKV('theme', null); } catch (_) { theme = null; }
+            }
+            applyTheme(theme || 'system');
+        }
+
+        function emptyStateHTML(isEmpty, isFiltered) {
+            const msg = isFiltered ? 'No matches found.' : (isEmpty ? 'No history yet.' : 'No matches found.');
+            return `
+                <div style="text-align:center; padding:40px; opacity:0.6;">
+                    ${msg}
+                </div>
+            `;
+        }
+
+        function loadLegacyHistory() {
+            try {
+                const arr = JSON.parse(localStorage.getItem('browsing-history') || '[]');
+                return Array.isArray(arr) ? arr : [];
+            } catch (_) { return []; }
+        }
+
+        function matchesFilter(item, q) {
+            if (!q) return true;
+            const title = String(item?.title || '').toLowerCase();
+            const url = String(item?.url || '').toLowerCase();
+            return title.includes(q) || url.includes(q);
+        }
+
+        function renderHistory(items, { hasAny, filter }) {
+            const q = String(filter || '').trim().toLowerCase();
+            const isFiltered = q.length > 0;
+
+            if (!items || items.length === 0) {
+                container.innerHTML = emptyStateHTML(!hasAny, isFiltered);
                 return;
             }
 
-            container.innerHTML = '';
-            // Show latest first
-            [...filtered].reverse().forEach((item) => {
-                // Find original index for deletion
-                const originalIndex = history.indexOf(item);
-
+            const frag = document.createDocumentFragment();
+            for (const item of items) {
                 const div = document.createElement('div');
                 div.className = 'history-item';
 
@@ -265,7 +319,7 @@
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>`;
-                del.addEventListener('click', (e) => window.deleteItem(e, originalIndex));
+                del.addEventListener('click', (e) => onDeleteItem(e, item));
 
                 div.appendChild(time);
                 div.appendChild(info);
@@ -274,30 +328,97 @@
                 div.onclick = (e) => {
                     if (!e.target.closest('.delete-btn')) window.location.href = String(item.url || '');
                 };
-                container.appendChild(div);
-            });
+                frag.appendChild(div);
+            }
+            container.replaceChildren(frag);
         }
 
-        window.deleteItem = (e, index) => {
+        async function deleteLegacyItem(item) {
+            const all = loadLegacyHistory();
+            const u = String(item?.url || '');
+            const t = Number(item?.time || 0);
+            // Remove the newest matching entry.
+            for (let i = all.length - 1; i >= 0; i--) {
+                const h = all[i];
+                if (String(h?.url || '') === u && Number(h?.time || 0) === t) {
+                    all.splice(i, 1);
+                    break;
+                }
+            }
+            try { localStorage.setItem('browsing-history', JSON.stringify(all)); } catch (_) { }
+            return true;
+        }
+
+        async function onDeleteItem(e, item) {
             e.stopPropagation();
-            if (index > -1) {
-                history.splice(index, 1);
-                localStorage.setItem('browsing-history', JSON.stringify(history));
-                renderHistory(searchInput.value);
+            if (!item) return;
+            if (db?.supported?.()) {
+                try { await db.removeHistory(item.id); } catch (_) { }
+            } else {
+                await deleteLegacyItem(item);
             }
+            scheduleRefresh();
         }
 
-        document.getElementById('clear-history').onclick = () => {
+        async function onClearAll() {
             if (confirm('Are you sure you want to clear your entire browsing history?')) {
-                history = [];
-                localStorage.setItem('browsing-history', '[]');
-                renderHistory();
+                if (db?.supported?.()) {
+                    try { await db.clearHistory(); } catch (_) { }
+                }
+                try { localStorage.setItem('browsing-history', '[]'); } catch (_) { }
+                if (searchInput) searchInput.value = '';
+                scheduleRefresh(true);
             }
         }
 
-        searchInput.addEventListener('input', (e) => renderHistory(e.target.value));
+        let refreshTimer = null;
+        let refreshSeq = 0;
 
-        renderHistory();
+        function scheduleRefresh(immediate = false) {
+            if (refreshTimer) clearTimeout(refreshTimer);
+            refreshTimer = setTimeout(() => refresh(), immediate ? 0 : 120);
+        }
+
+        async function refresh() {
+            const seq = ++refreshSeq;
+            const filter = String(searchInput?.value || '').trim();
+            const q = filter.toLowerCase();
+
+            // Make sure DB is ready.
+            try { await db.open(); } catch (_) { }
+
+            if (!container) return;
+
+            if (db?.supported?.()) {
+                const [items, total] = await Promise.all([
+                    db.getHistory({ query: q, limit: 2000 }).catch(() => []),
+                    (typeof db.count === 'function' ? db.count('history').catch(() => 0) : Promise.resolve(0))
+                ]);
+                if (seq !== refreshSeq) return;
+                renderHistory(items, { hasAny: total > 0, filter });
+                return;
+            }
+
+            const all = loadLegacyHistory();
+            const filtered = q ? all.filter((h) => matchesFilter(h, q)) : all;
+            // Show newest first.
+            const items = filtered.slice(-2000).reverse();
+            if (seq !== refreshSeq) return;
+            renderHistory(items, { hasAny: all.length > 0, filter });
+        }
+
+        clearBtn?.addEventListener('click', onClearAll);
+        searchInput?.addEventListener('input', () => scheduleRefresh());
+
+        bc?.addEventListener('message', (e) => {
+            const msg = e?.data || {};
+            const type = msg?.type;
+            if (type === 'history-changed') scheduleRefresh(true);
+            if (type === 'kv-changed' && msg?.payload?.key === 'theme') loadThemePreference();
+        });
+
+        await loadThemePreference();
+        await refresh();
     </script>
 </body>
 

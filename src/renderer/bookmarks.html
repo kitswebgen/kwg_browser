@@ -31,6 +31,28 @@
             }
         }
 
+        :root[data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #A8C7FA;
+            --card-hover: rgba(255, 255, 255, 0.08);
+            --surface: rgba(255, 255, 255, 0.05);
+        }
+
+        :root[data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-primary: #1F1F1F;
+            --text-secondary: #5F6368;
+            --accent-color: #0B57D0;
+            --card-hover: rgba(255, 255, 255, 0.8);
+            --surface: rgba(255, 255, 255, 0.5);
+        }
+
         body {
             background: var(--bg-gradient);
             color: var(--text-primary);
@@ -190,24 +212,42 @@
         <!-- Dynamic Content -->
     </div>
 
-    <script>
+    <script type="module">
+        import { db } from './db.js';
+
         const container = document.getElementById('bookmarks-container');
-        let bookmarks = [];
-        try {
-            bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-        } catch (e) { }
+        const bc = (() => {
+            try { return typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('kits-db') : null; }
+            catch (_) { return null; }
+        })();
 
-        function renderBookmarks() {
-            if (bookmarks.length === 0) {
-                container.innerHTML = `
-                    <div style="grid-column: 1/-1; text-align: center; padding: 60px; opacity: 0.6; font-size: 18px;">
-                        No bookmarks added yet.
-                    </div>`;
-                return;
+        function applyTheme(theme) {
+            const mode = String(theme || 'system').toLowerCase();
+            if (mode === 'dark' || mode === 'light') document.documentElement.dataset.theme = mode;
+            else document.documentElement.removeAttribute('data-theme');
+        }
+
+        async function loadThemePreference() {
+            let theme = null;
+            try { theme = localStorage.getItem('theme'); } catch (_) { theme = null; }
+            if (!theme && db?.supported?.()) {
+                try { theme = await db.getKV('theme', null); } catch (_) { theme = null; }
             }
+            applyTheme(theme || 'system');
+        }
 
-            container.innerHTML = '';
-            bookmarks.forEach((bm, index) => {
+        function emptyState() {
+            container.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 60px; opacity: 0.6; font-size: 18px;">
+                    No bookmarks added yet.
+                </div>`;
+        }
+
+        function renderBookmarks(bookmarks) {
+            if (!Array.isArray(bookmarks) || bookmarks.length === 0) return emptyState();
+
+            const frag = document.createDocumentFragment();
+            for (const bm of bookmarks) {
                 let domain = '';
                 try { domain = new URL(bm.url).hostname; } catch (e) { }
 
@@ -241,7 +281,7 @@
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>`;
-                del.addEventListener('click', (e) => window.deleteBookmark(e, index));
+                del.addEventListener('click', (e) => onDeleteBookmark(e, bm));
 
                 card.appendChild(iconBox);
                 card.appendChild(title);
@@ -251,20 +291,38 @@
                 card.onclick = (e) => {
                     if (!e.target.closest('.delete-btn')) window.location.href = String(bm.url || '');
                 };
-                container.appendChild(card);
-            });
+                frag.appendChild(card);
+            }
+            container.replaceChildren(frag);
         }
 
-        window.deleteBookmark = (e, index) => {
+        async function onDeleteBookmark(e, bm) {
             e.stopPropagation();
+            if (!bm?.url) return;
             if (confirm('Delete this bookmark?')) {
-                bookmarks.splice(index, 1);
-                localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
-                renderBookmarks();
+                try { await db.removeBookmark(String(bm.url)); } catch (_) { }
+                await refresh();
             }
         }
 
-        renderBookmarks();
+        let refreshSeq = 0;
+        async function refresh() {
+            const seq = ++refreshSeq;
+            try { await db.open(); } catch (_) { }
+            const bookmarks = await db.getBookmarks({ limit: 5000 }).catch(() => []);
+            if (seq !== refreshSeq) return;
+            renderBookmarks(bookmarks);
+        }
+
+        bc?.addEventListener('message', (e) => {
+            const msg = e?.data || {};
+            const type = msg?.type;
+            if (type === 'bookmarks-changed') refresh();
+            if (type === 'kv-changed' && msg?.payload?.key === 'theme') loadThemePreference();
+        });
+
+        await loadThemePreference();
+        await refresh();
     </script>
 </body>
 

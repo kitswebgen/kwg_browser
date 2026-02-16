@@ -29,6 +29,26 @@
             }
         }
 
+        :root[data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #A8C7FA;
+            --card-hover: rgba(255, 255, 255, 0.08);
+        }
+
+        :root[data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-primary: #1F1F1F;
+            --text-secondary: #5F6368;
+            --accent-color: #0B57D0;
+            --card-hover: rgba(255, 255, 255, 0.8);
+        }
+
         body {
             background: var(--bg-gradient);
             color: var(--text-primary);
@@ -269,50 +289,80 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { db } from './db.js';
+
         const input = document.getElementById('q');
         const greetingEl = document.getElementById('greeting');
         const dateEl = document.getElementById('date-display');
         const shortcutsEl = document.getElementById('shortcuts');
 
-        // Update greeting & date
+        const bc = (() => {
+            try { return typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('kits-db') : null; }
+            catch (_) { return null; }
+        })();
+
+        let currentEngine = 'google';
+        let currentTheme = 'system';
+        let profileName = '';
+
+        function applyTheme(theme) {
+            const mode = String(theme || 'system').toLowerCase();
+            currentTheme = mode;
+            if (mode === 'dark' || mode === 'light') document.documentElement.dataset.theme = mode;
+            else document.documentElement.removeAttribute('data-theme');
+        }
+
+        async function loadPrefs() {
+            try { await db.open(); } catch (_) { }
+
+            // Theme
+            let theme = null;
+            try { theme = localStorage.getItem('theme'); } catch (_) { theme = null; }
+            if (!theme && db?.supported?.()) theme = await db.getKV('theme', null).catch(() => null);
+            applyTheme(theme || 'system');
+
+            // Search engine
+            let engine = null;
+            try { engine = localStorage.getItem('searchEngine'); } catch (_) { engine = null; }
+            if (!engine && db?.supported?.()) engine = await db.getKV('searchEngine', null).catch(() => null);
+            currentEngine = String(engine || 'google');
+
+            // Profile
+            let profile = null;
+            try { profile = JSON.parse(localStorage.getItem('profile') || 'null'); } catch (_) { profile = null; }
+            if ((!profile || typeof profile !== 'object') && db?.supported?.()) profile = await db.getKV('profile', null).catch(() => null);
+            const rawName = String(profile?.name || '').trim();
+            profileName = rawName ? rawName.split(' ')[0] : '';
+        }
+
         function updateTime() {
             const now = new Date();
             const hour = now.getHours();
-
-            // Get user name
-            let name = '';
-            try {
-                const profile = JSON.parse(localStorage.getItem('profile') || '{}');
-                if (profile.name) name = `, ${profile.name.split(' ')[0]}`;
-            } catch (e) { }
 
             let greet = 'Good Evening';
             if (hour < 12) greet = 'Good Morning';
             else if (hour < 18) greet = 'Good Afternoon';
 
+            const name = profileName ? `, ${profileName}` : '';
             greetingEl.innerHTML = `${greet}<span>${name}</span>`;
             dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
         }
-        updateTime();
 
         // Render Shortcuts
-        function renderShortcuts() {
+        async function renderShortcuts() {
             let bookmarks = [];
-            try {
-                bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-            } catch (e) { }
+            try { bookmarks = await db.getBookmarks({ limit: 12 }); } catch (_) { bookmarks = []; }
 
-            // Defaults if empty
-            if (bookmarks.length === 0) {
+            if (!Array.isArray(bookmarks) || bookmarks.length === 0) {
                 bookmarks = [
                     { title: 'Google', url: 'https://google.com', icon: 'G' },
                     { title: 'YouTube', url: 'https://youtube.com', icon: '▶' },
                     { title: 'GitHub', url: 'https://github.com', icon: '⌨' },
-                    { title: 'Twitter', url: 'https://twitter.com', icon: '𝕏' }
+                    { title: 'Wikipedia', url: 'https://wikipedia.org', icon: 'W' },
+                    { title: 'X', url: 'https://x.com', icon: '𝕏' }
                 ];
             } else {
-                // Take top 4 or random 4 for improved look
                 bookmarks = bookmarks.slice(0, 8);
             }
 
@@ -333,7 +383,6 @@
                 </a>`;
             }).join('');
         }
-        renderShortcuts();
 
         // Search Logic
         input.addEventListener('keydown', (e) => {
@@ -341,7 +390,6 @@
                 const query = input.value.trim();
                 if (!query) return;
 
-                const currentEngine = localStorage.getItem('searchEngine') || 'google';
                 const searchEngines = {
                     google: 'https://www.google.com/search?q=',
                     bing: 'https://www.bing.com/search?q=',
@@ -353,11 +401,30 @@
                 if (!query.includes(' ') && query.includes('.')) {
                     url = query.startsWith('http') ? query : 'https://' + query;
                 } else {
-                    url = searchEngines[currentEngine] + encodeURIComponent(query);
+                    const base = searchEngines[currentEngine] || searchEngines.google;
+                    url = base + encodeURIComponent(query);
                 }
                 window.location.href = url;
             }
         });
+
+        bc?.addEventListener('message', (e) => {
+            const msg = e?.data || {};
+            const type = msg?.type;
+            if (type === 'bookmarks-changed') renderShortcuts();
+            if (type === 'kv-changed') {
+                const key = msg?.payload?.key;
+                if (key === 'theme') loadPrefs().then(() => updateTime());
+                if (key === 'searchEngine') loadPrefs();
+                if (key === 'profile') loadPrefs().then(() => updateTime());
+            }
+        });
+
+        await loadPrefs();
+        updateTime();
+        // Update greeting/date roughly every minute.
+        setInterval(updateTime, 60_000);
+        await renderShortcuts();
     </script>
 </body>
 

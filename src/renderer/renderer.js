@@ -2,6 +2,7 @@
 import { TabManager } from './managers/TabManager.js';
 import { ProfileManager } from './managers/ProfileManager.js';
 import { UIManager } from './ui/UIManager.js';
+import { db } from './db.js';
 
 // Global instances
 const tabsContainer = document.getElementById('tabs-container');
@@ -67,11 +68,13 @@ const TM = new TabManager(tabsContainer, webviewContainer, {
     },
     onLogHistory: (title, url) => {
         try {
+            const ts = Date.now();
             let history = JSON.parse(localStorage.getItem('browsing-history') || '[]');
             if (history.length > 0 && history[history.length - 1].url === url) return;
-            history.push({ title, url, time: Date.now() });
+            history.push({ title, url, time: ts });
             if (history.length > 2000) history = history.slice(-1500);
             localStorage.setItem('browsing-history', JSON.stringify(history));
+            db.addHistory({ title, url, time: ts }).catch(() => { });
         } catch (e) { }
     },
     onNotification: (msg) => UI.showNotification(msg),
@@ -415,6 +418,13 @@ if (window.electronAPI) {
 // Init
 // Init
 async function init() {
+    try {
+        await db.open();
+        await db.migrateLegacy({ storeGet: window.electronAPI?.storeGet });
+        // Ask for persistent storage when supported (prevents eviction under disk pressure).
+        try { await navigator.storage?.persist?.(); } catch (_) { }
+    } catch (_) { }
+
     await PM.init();
     UI.init();
 

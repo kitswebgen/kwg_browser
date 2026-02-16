@@ -30,6 +30,26 @@
             }
         }
 
+        :root[data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #A8C7FA;
+            --card-hover: rgba(255, 255, 255, 0.08);
+        }
+
+        :root[data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-primary: #1F1F1F;
+            --text-secondary: #5F6368;
+            --accent-color: #0B57D0;
+            --card-hover: rgba(255, 255, 255, 0.8);
+        }
+
         body {
             background: var(--bg-gradient);
             color: var(--text-primary);
@@ -291,7 +311,7 @@
                         <div class="setting-title">Clear Browsing Data</div>
                         <div class="setting-desc">Clear history, cookies, and other site data</div>
                     </div>
-                    <button class="btn" onclick="alert('Coming soon in next update!')">Clear Data</button>
+                    <button class="btn" id="clear-data-btn">Clear Data</button>
                 </div>
             </div>
         </div>
@@ -317,10 +337,33 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { db } from './db.js';
+
         // Navigation Logic
         const navItems = document.querySelectorAll('.nav-item');
         const sections = document.querySelectorAll('.section');
+        const clearDataBtn = document.getElementById('clear-data-btn');
+
+        const bc = (() => {
+            try { return typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('kits-db') : null; }
+            catch (_) { return null; }
+        })();
+
+        function applyTheme(theme) {
+            const mode = String(theme || 'system').toLowerCase();
+            if (mode === 'dark' || mode === 'light') document.documentElement.dataset.theme = mode;
+            else document.documentElement.removeAttribute('data-theme');
+        }
+
+        async function loadThemePreference() {
+            let theme = null;
+            try { theme = localStorage.getItem('theme'); } catch (_) { theme = null; }
+            if (!theme && db?.supported?.()) {
+                try { theme = await db.getKV('theme', null); } catch (_) { theme = null; }
+            }
+            applyTheme(theme || 'system');
+        }
 
         navItems.forEach(item => {
             item.addEventListener('click', () => {
@@ -337,22 +380,61 @@
 
         // Logic: Search Engine
         const searchSelect = document.getElementById('search-engine');
-        searchSelect.value = localStorage.getItem('searchEngine') || 'google';
+        async function loadEngine() {
+            let engine = null;
+            try { engine = localStorage.getItem('searchEngine'); } catch (_) { engine = null; }
+            if (!engine && db?.supported?.()) engine = await db.getKV('searchEngine', null).catch(() => null);
+            searchSelect.value = String(engine || 'google');
+        }
+
+        await db.open().catch(() => { });
+        await loadEngine();
         searchSelect.addEventListener('change', () => {
-            localStorage.setItem('searchEngine', searchSelect.value);
+            const v = searchSelect.value;
+            try { localStorage.setItem('searchEngine', v); } catch (_) { }
+            db.setKV('searchEngine', v).catch(() => { });
         });
 
         // Logic: Profile Name
         const profileInput = document.getElementById('profile-name');
-        try {
-            const profile = JSON.parse(localStorage.getItem('profile') || '{}');
-            profileInput.value = profile.name || '';
-        } catch (e) { }
+        async function loadProfile() {
+            let profile = null;
+            try { profile = JSON.parse(localStorage.getItem('profile') || 'null'); } catch (_) { profile = null; }
+            if ((!profile || typeof profile !== 'object') && db?.supported?.()) profile = await db.getKV('profile', null).catch(() => null);
+            profileInput.value = String(profile?.name || '');
+        }
 
+        await loadProfile();
+
+        let profileTimer = null;
         profileInput.addEventListener('input', () => {
-            const profile = { name: profileInput.value };
-            localStorage.setItem('profile', JSON.stringify(profile));
+            if (profileTimer) clearTimeout(profileTimer);
+            profileTimer = setTimeout(() => {
+                const profile = { name: profileInput.value };
+                try { localStorage.setItem('profile', JSON.stringify(profile)); } catch (_) { }
+                db.setKV('profile', profile).catch(() => { });
+            }, 150);
         });
+
+        clearDataBtn?.addEventListener('click', async () => {
+            const ok = confirm('Clear browsing history stored in KITS?');
+            if (!ok) return;
+            try { await db.clearHistory(); } catch (_) { }
+            try { localStorage.setItem('browsing-history', '[]'); } catch (_) { }
+            alert('History cleared.');
+        });
+
+        bc?.addEventListener('message', (e) => {
+            const msg = e?.data || {};
+            if (msg?.type === 'kv-changed') {
+                const key = msg?.payload?.key;
+                if (key === 'theme') loadThemePreference();
+                if (key === 'searchEngine') loadEngine();
+                if (key === 'profile') loadProfile();
+            }
+        });
+
+        await loadThemePreference();
     </script>
 </body>
 
