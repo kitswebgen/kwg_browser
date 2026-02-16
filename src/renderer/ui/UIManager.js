@@ -227,7 +227,8 @@ export class UIManager {
         document.getElementById('zen-btn').onclick = () => this.toggleZenMode();
         document.getElementById('reader-btn').onclick = () => this.toggleReaderMode();
         document.getElementById('bookmark-btn').onclick = () => this.bookmarkCurrentPage();
-        document.getElementById('menu-btn').onclick = () => document.getElementById('settings-modal').classList.remove('hidden');
+        document.getElementById('menu-btn').onclick = () => this.TM.createTab('settings.html');
+        document.getElementById('sidebar-settings-btn').addEventListener('click', () => this.TM.createTab('settings.html'));
 
         // Window controls
         document.getElementById('min-btn').onclick = () => window.electronAPI.minimizeWindow();
@@ -243,7 +244,11 @@ export class UIManager {
                 document.querySelectorAll('.side-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
                 const title = item.getAttribute('title');
-                this.handleSidebarClick(title);
+                if (title === 'Settings') {
+                    this.TM.createTab('settings.html');
+                } else {
+                    this.handleSidebarClick(title);
+                }
             });
         });
     }
