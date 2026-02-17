@@ -8,6 +8,9 @@ import { db } from './db.js';
 const tabsContainer = document.getElementById('tabs-container');
 const webviewContainer = document.getElementById('webview-container');
 
+// Platform-specific styling
+document.body.classList.add(window.electronAPI.platform === 'darwin' ? 'platform-mac' : 'platform-win');
+
 // Instantiate Managers
 const PM = new ProfileManager({
     onProfileUpdate: (profile) => {

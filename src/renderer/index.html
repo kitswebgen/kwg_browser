@@ -16,13 +16,6 @@
 
     <div id="titleapi">
         <!-- Window Controls -->
-        <!-- Custom Win Controls -->
-        <div class="window-controls">
-            <button class="win-btn" id="min-btn" title="Minimize" aria-label="Minimize"></button>
-            <button class="win-btn" id="max-btn" title="Fullscreen" aria-label="Fullscreen"></button>
-            <button class="win-btn" id="close-btn-win" title="Close" aria-label="Close"></button>
-        </div>
-
         <!-- Tabs in Titlebar -->
         <div class="tab-bar-container titlebar-tabs">
             <div id="tabs-container" class="tabs"></div>
@@ -34,6 +27,14 @@
                 </svg>
             </button>
             <span id="tab-count" class="tab-count">1</span>
+        </div>
+
+        <!-- Window Controls -->
+        <!-- Custom Win Controls -->
+        <div class="window-controls">
+            <button class="win-btn" id="min-btn" title="Minimize" aria-label="Minimize"></button>
+            <button class="win-btn" id="max-btn" title="Fullscreen" aria-label="Fullscreen"></button>
+            <button class="win-btn" id="close-btn-win" title="Close" aria-label="Close"></button>
         </div>
     </div>
 
@@ -312,7 +313,8 @@
                 <div class="setting-group">
                     <h3>Performance</h3>
                     <button id="clear-cache-btn" class="kits-btn secondary">Clear Cache</button>
-                    <button id="open-clear-data-btn" class="kits-btn secondary" style="margin-left:8px;">Clear Browsing Data</button>
+                    <button id="open-clear-data-btn" class="kits-btn secondary" style="margin-left:8px;">Clear Browsing
+                        Data</button>
                 </div>
             </div>
         </div>
@@ -523,7 +525,8 @@
     <!-- About Modal -->
     <div id="about-modal" class="modal hidden">
         <div class="modal-content glass" style="width:420px; text-align:center;">
-            <img src="icon.png" alt="KITSWebGen" style="width:72px; height:72px; margin-bottom:12px; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,0.25);" />
+            <img src="icon.png" alt="KITSWebGen"
+                style="width:72px; height:72px; margin-bottom:12px; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,0.25);" />
             <h2 style="margin-bottom:4px;">KITSWebGen</h2>
             <div style="opacity:0.5; font-size:12px; margin-bottom:20px;">Chromium-based Secure Browser</div>
             <div id="about-info" style="text-align:left; font-size:13px; line-height:2; opacity:0.8;"></div>

@@ -523,6 +523,8 @@ function createWindow() {
         minWidth: 900,
         minHeight: 600,
         frame: false,
+        titleBarStyle: process.platform === 'darwin' ? 'hidden' : undefined,
+        trafficLightPosition: process.platform === 'darwin' ? { x: 12, y: 12 } : undefined,
         backgroundColor: '#1E1F22',
         show: false,
         title: 'KITSWebGen',

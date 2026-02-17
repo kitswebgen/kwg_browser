@@ -234,6 +234,7 @@ body {
 }
 
 /* --- Window Title / Controls --- */
+/* --- Window Title / Controls --- */
 #titleapi {
     display: flex;
     align-items: center;
@@ -245,38 +246,71 @@ body {
     border-bottom: 1px solid var(--sys-glass-border);
 }
 
-.window-controls {
+/* MacOS: Add padding for traffic lights */
+body.platform-mac #titleapi {
+    padding-left: 80px;
+}
+
+body.platform-mac .window-controls {
+    display: none;
+}
+
+/* Windows: Custom Controls */
+body.platform-win .window-controls {
     display: flex;
-    gap: 8px;
     -webkit-app-region: no-drag;
+    margin-left: auto;
+    /* Push to right */
+    height: 100%;
 }
 
-.win-btn {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 1px solid rgba(0, 0, 0, 0.18);
-    position: relative;
-    cursor: pointer;
-    transition: transform 0.1s, opacity 0.2s;
-    opacity: 0.95;
+body.platform-win .win-btn {
+    width: 46px;
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    /* Windows caption buttons usually default cursor */
+    transition: background-color 0.2s;
+    border-radius: 0;
 }
 
-.win-btn:hover {
-    opacity: 1;
-    transform: scale(1.08);
+body.platform-win .win-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--md-sys-color-on-surface);
 }
 
-#close-btn-win {
-    background-color: #FF5F57;
+body.platform-win #close-btn-win:hover {
+    background-color: #E81123;
+    color: white;
 }
 
-#min-btn {
-    background-color: #FEBC2E;
+/* Icons for Windows buttons (using ::after for simplicity if not in HTML) */
+/* The HTML has empty buttons, so we need SVG or content. 
+   The current HTML has title attributes but no content? 
+   Let's check index.html again. It had empty buttons. 
+   We must add content or use CSS content. */
+
+body.platform-win #min-btn::after {
+    content: "─";
+    font-family: "Segoe UI Symbol", sans-serif;
+    font-size: 10px;
 }
 
-#max-btn {
-    background-color: #28C840;
+body.platform-win #max-btn::after {
+    content: "☐";
+    font-family: "Segoe UI Symbol", sans-serif;
+    font-size: 10px;
+}
+
+body.platform-win #close-btn-win::after {
+    content: "✕";
+    font-family: "Segoe UI Symbol", sans-serif;
+    font-size: 10px;
 }
 
 .drag-region {

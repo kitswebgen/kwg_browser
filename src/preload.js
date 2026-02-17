@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
+    platform: process.platform,
     // Window controls
     closeWindow: () => ipcRenderer.send('window-close'),
     maximizeWindow: () => ipcRenderer.send('window-max'),
