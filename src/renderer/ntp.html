@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KITSWebGen</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #A8C7FA;
+            --card-hover: rgba(255, 255, 255, 0.08);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+                --glass-bg: rgba(255, 255, 255, 0.6);
+                --glass-border: rgba(255, 255, 255, 0.4);
+                --text-primary: #1F1F1F;
+                --text-secondary: #5F6368;
+                --accent-color: #0B57D0;
+                --card-hover: rgba(255, 255, 255, 0.8);
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #A8C7FA;
+            --card-hover: rgba(255, 255, 255, 0.08);
+        }
+
+        :root[data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-primary: #1F1F1F;
+            --text-secondary: #5F6368;
+            --accent-color: #0B57D0;
+            --card-hover: rgba(255, 255, 255, 0.8);
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            z-index: 10;
+        }
+
+        .greeting {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-align: center;
+            opacity: 0;
+            animation: slideUp 0.8s ease-out forwards;
+        }
+
+        .greeting span {
+            background: linear-gradient(to right, var(--accent-color), #D3E3FD);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .time-display {
+            font-size: 16px;
+            margin-bottom: 48px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            opacity: 0;
+            animation: slideUp 0.8s ease-out 0.1s forwards;
+            letter-spacing: 1px;
+        }
+
+        .search-container {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            opacity: 0;
+            animation: slideUp 0.8s ease-out 0.2s forwards;
+        }
+
+        .search-box {
+            width: 100%;
+            height: 60px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .search-box:hover,
+        .search-box:focus-within {
+            transform: translateY(-2px) scale(1.01);
+            background: var(--card-hover);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            border-color: var(--accent-color);
+        }
+
+        .search-icon {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-secondary);
+            margin-right: 16px;
+            transition: fill 0.3s;
+        }
+
+        .search-box:focus-within .search-icon {
+            fill: var(--accent-color);
+        }
+
+        input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            color: var(--text-primary);
+            outline: none;
+            font-family: inherit;
+        }
+
+        input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .shortcuts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 24px;
+            margin-top: 56px;
+            width: 100%;
+            max-width: 700px;
+            opacity: 0;
+            animation: slideUp 0.8s ease-out 0.3s forwards;
+        }
+
+        .shortcut {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: transform 0.2s;
+        }
+
+        .shortcut:hover {
+            transform: translateY(-5px);
+        }
+
+        .shortcut-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shortcut-icon img {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+        }
+
+        .shortcut:hover .shortcut-icon {
+            background: var(--card-hover);
+            border-color: var(--accent-color);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .shortcut-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: color 0.2s;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .shortcut:hover .shortcut-title {
+            color: var(--text-primary);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Weather Widget */
+        .weather-widget {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 100px;
+            border: 1px solid var(--glass-border);
+            font-size: 14px;
+            color: var(--text-secondary);
+            cursor: default;
+            transition: all 0.3s;
+        }
+
+        .weather-widget:hover {
+            background: var(--card-hover);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="weather-widget">
+        <span id="w-icon">☀️</span>
+        <span id="w-temp">31°C</span>
+    </div>
+
+    <div class="container">
+        <div class="greeting" id="greeting">Good Morning</div>
+        <div class="time-display" id="date-display">Monday, Feb 16</div>
+
+        <div class="search-container">
+            <div class="search-box">
+                <svg class="search-icon" viewBox="0 0 24 24">
+                    <path
+                        d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                </svg>
+                <input type="text" id="q" placeholder="Search the web..." autofocus>
+            </div>
+        </div>
+
+        <div class="shortcuts" id="shortcuts">
+            <!-- Dynamic Shortcuts will be injected here -->
+        </div>
+    </div>
+
+    <script type="module">
+        import { db } from './db.js';
+
+        const input = document.getElementById('q');
+        const greetingEl = document.getElementById('greeting');
+        const dateEl = document.getElementById('date-display');
+        const shortcutsEl = document.getElementById('shortcuts');
+
+        const bc = (() => {
+            try { return typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('kits-db') : null; }
+            catch (_) { return null; }
+        })();
+
+        let currentEngine = 'google';
+        let currentTheme = 'system';
+        let profileName = '';
+
+        function applyTheme(theme) {
+            const mode = String(theme || 'system').toLowerCase();
+            currentTheme = mode;
+            if (mode === 'dark' || mode === 'light') document.documentElement.dataset.theme = mode;
+            else document.documentElement.removeAttribute('data-theme');
+        }
+
+        async function loadPrefs() {
+            try { await db.open(); } catch (_) { }
+
+            // Theme
+            let theme = null;
+            try { theme = localStorage.getItem('theme'); } catch (_) { theme = null; }
+            if (!theme && db?.supported?.()) theme = await db.getKV('theme', null).catch(() => null);
+            applyTheme(theme || 'system');
+
+            // Search engine
+            let engine = null;
+            try { engine = localStorage.getItem('searchEngine'); } catch (_) { engine = null; }
+            if (!engine && db?.supported?.()) engine = await db.getKV('searchEngine', null).catch(() => null);
+            currentEngine = String(engine || 'google');
+
+            // Profile
+            let profile = null;
+            try { profile = JSON.parse(localStorage.getItem('profile') || 'null'); } catch (_) { profile = null; }
+            if ((!profile || typeof profile !== 'object') && db?.supported?.()) profile = await db.getKV('profile', null).catch(() => null);
+            const rawName = String(profile?.name || '').trim();
+            profileName = rawName ? rawName.split(' ')[0] : '';
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const hour = now.getHours();
+
+            let greet = 'Good Evening';
+            if (hour < 12) greet = 'Good Morning';
+            else if (hour < 18) greet = 'Good Afternoon';
+
+            const name = profileName ? `, ${profileName}` : '';
+            greetingEl.innerHTML = `${greet}<span>${name}</span>`;
+            dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        }
+
+        // Render Shortcuts
+        async function renderShortcuts() {
+            let bookmarks = [];
+            try { bookmarks = await db.getBookmarks({ limit: 12 }); } catch (_) { bookmarks = []; }
+
+            if (!Array.isArray(bookmarks) || bookmarks.length === 0) {
+                bookmarks = [
+                    { title: 'Google', url: 'https://google.com', icon: 'G' },
+                    { title: 'YouTube', url: 'https://youtube.com', icon: '▶' },
+                    { title: 'GitHub', url: 'https://github.com', icon: '⌨' },
+                    { title: 'Wikipedia', url: 'https://wikipedia.org', icon: 'W' },
+                    { title: 'X', url: 'https://x.com', icon: '𝕏' }
+                ];
+            } else {
+                bookmarks = bookmarks.slice(0, 8);
+            }
+
+            shortcutsEl.innerHTML = bookmarks.map(b => {
+                let iconHtml = `<div class="shortcut-icon">${b.icon || b.title[0]}</div>`;
+                // Try to use favicon if available (from saved bookmarks) or google service
+                if (b.url) {
+                    try {
+                        const domain = new URL(b.url).hostname;
+                        iconHtml = `<div class="shortcut-icon"><img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" onerror="this.parentElement.textContent='${b.title[0]}'"/></div>`;
+                    } catch (e) { }
+                }
+
+                return `
+                <a href="${b.url}" class="shortcut">
+                    ${iconHtml}
+                    <span class="shortcut-title">${b.title}</span>
+                </a>`;
+            }).join('');
+        }
+
+        // Search Logic
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const query = input.value.trim();
+                if (!query) return;
+
+                const searchEngines = {
+                    google: 'https://www.google.com/search?q=',
+                    bing: 'https://www.bing.com/search?q=',
+                    duckduckgo: 'https://duckduckgo.com/?q=',
+                    brave: 'https://search.brave.com/search?q='
+                };
+
+                let url;
+                if (!query.includes(' ') && query.includes('.')) {
+                    url = query.startsWith('http') ? query : 'https://' + query;
+                } else {
+                    const base = searchEngines[currentEngine] || searchEngines.google;
+                    url = base + encodeURIComponent(query);
+                }
+                window.location.href = url;
+            }
+        });
+
+        bc?.addEventListener('message', (e) => {
+            const msg = e?.data || {};
+            const type = msg?.type;
+            if (type === 'bookmarks-changed') renderShortcuts();
+            if (type === 'kv-changed') {
+                const key = msg?.payload?.key;
+                if (key === 'theme') loadPrefs().then(() => updateTime());
+                if (key === 'searchEngine') loadPrefs();
+                if (key === 'profile') loadPrefs().then(() => updateTime());
+            }
+        });
+
+        await loadPrefs();
+        updateTime();
+        // Update greeting/date roughly every minute.
+        setInterval(updateTime, 60_000);
+        await renderShortcuts();
+    </script>
+</body>
+
+</html>

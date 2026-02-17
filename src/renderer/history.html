@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History | KITSWebGen</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #A8C7FA;
+            --card-hover: rgba(255, 255, 255, 0.08);
+            --surface: rgba(255, 255, 255, 0.05);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+                --glass-bg: rgba(255, 255, 255, 0.6);
+                --glass-border: rgba(255, 255, 255, 0.4);
+                --text-primary: #1F1F1F;
+                --text-secondary: #5F6368;
+                --accent-color: #0B57D0;
+                --card-hover: rgba(255, 255, 255, 0.8);
+                --surface: rgba(255, 255, 255, 0.5);
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #A8C7FA;
+            --card-hover: rgba(255, 255, 255, 0.08);
+            --surface: rgba(255, 255, 255, 0.05);
+        }
+
+        :root[data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-primary: #1F1F1F;
+            --text-secondary: #5F6368;
+            --accent-color: #0B57D0;
+            --card-hover: rgba(255, 255, 255, 0.8);
+            --surface: rgba(255, 255, 255, 0.5);
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            margin: 0;
+            padding: 40px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-weight: 600;
+            font-size: 28px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px 16px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            width: 300px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-box:focus {
+            border-color: var(--accent-color);
+            background: var(--card-hover);
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .history-item {
+            background: var(--surface);
+            padding: 16px 20px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .history-item:hover {
+            transform: scale(1.01);
+            background: var(--card-hover);
+            border-color: var(--glass-border);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            min-width: 60px;
+            font-weight: 500;
+        }
+
+        .info {
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .title {
+            font-weight: 500;
+            font-size: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .url {
+            font-size: 12px;
+            color: var(--accent-color);
+            opacity: 0.8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .delete-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background: rgba(234, 67, 53, 0.1);
+            color: #EA4335;
+        }
+
+        .history-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .clear-btn {
+            background: rgba(234, 67, 53, 0.1);
+            color: #EA4335;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .clear-btn:hover {
+            background: rgba(234, 67, 53, 0.2);
+            transform: translateY(-1px);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                History
+            </h1>
+            <input type="text" id="search" class="search-box" placeholder="Search history...">
+            <button class="clear-btn" id="clear-history">Clear All</button>
+        </div>
+        <div id="history-container" class="history-list">
+            <!-- Dynamic Content -->
+        </div>
+    </div>
+
+    <script type="module">
+        import { db } from './db.js';
+
+        const container = document.getElementById('history-container');
+        const searchInput = document.getElementById('search');
+        const clearBtn = document.getElementById('clear-history');
+
+        const bc = (() => {
+            try { return typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('kits-db') : null; }
+            catch (_) { return null; }
+        })();
+
+        function applyTheme(theme) {
+            const mode = String(theme || 'system').toLowerCase();
+            if (mode === 'dark' || mode === 'light') document.documentElement.dataset.theme = mode;
+            else document.documentElement.removeAttribute('data-theme');
+        }
+
+        async function loadThemePreference() {
+            let theme = null;
+            try { theme = localStorage.getItem('theme'); } catch (_) { theme = null; }
+            if (!theme && db?.supported?.()) {
+                try { theme = await db.getKV('theme', null); } catch (_) { theme = null; }
+            }
+            applyTheme(theme || 'system');
+        }
+
+        function emptyStateHTML(isEmpty, isFiltered) {
+            const msg = isFiltered ? 'No matches found.' : (isEmpty ? 'No history yet.' : 'No matches found.');
+            return `
+                <div style="text-align:center; padding:40px; opacity:0.6;">
+                    ${msg}
+                </div>
+            `;
+        }
+
+        function loadLegacyHistory() {
+            try {
+                const arr = JSON.parse(localStorage.getItem('browsing-history') || '[]');
+                return Array.isArray(arr) ? arr : [];
+            } catch (_) { return []; }
+        }
+
+        function matchesFilter(item, q) {
+            if (!q) return true;
+            const title = String(item?.title || '').toLowerCase();
+            const url = String(item?.url || '').toLowerCase();
+            return title.includes(q) || url.includes(q);
+        }
+
+        function renderHistory(items, { hasAny, filter }) {
+            const q = String(filter || '').trim().toLowerCase();
+            const isFiltered = q.length > 0;
+
+            if (!items || items.length === 0) {
+                container.innerHTML = emptyStateHTML(!hasAny, isFiltered);
+                return;
+            }
+
+            const frag = document.createDocumentFragment();
+            for (const item of items) {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+
+                const time = document.createElement('span');
+                time.className = 'time';
+                time.textContent = new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                const info = document.createElement('div');
+                info.className = 'info';
+
+                const title = document.createElement('div');
+                title.className = 'title';
+                title.textContent = item.title || 'Untitled';
+
+                const url = document.createElement('div');
+                url.className = 'url';
+                url.textContent = item.url || '';
+
+                info.appendChild(title);
+                info.appendChild(url);
+
+                const del = document.createElement('div');
+                del.className = 'delete-btn';
+                del.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>`;
+                del.addEventListener('click', (e) => onDeleteItem(e, item));
+
+                div.appendChild(time);
+                div.appendChild(info);
+                div.appendChild(del);
+
+                div.onclick = (e) => {
+                    if (!e.target.closest('.delete-btn')) window.location.href = String(item.url || '');
+                };
+                frag.appendChild(div);
+            }
+            container.replaceChildren(frag);
+        }
+
+        async function deleteLegacyItem(item) {
+            const all = loadLegacyHistory();
+            const u = String(item?.url || '');
+            const t = Number(item?.time || 0);
+            // Remove the newest matching entry.
+            for (let i = all.length - 1; i >= 0; i--) {
+                const h = all[i];
+                if (String(h?.url || '') === u && Number(h?.time || 0) === t) {
+                    all.splice(i, 1);
+                    break;
+                }
+            }
+            try { localStorage.setItem('browsing-history', JSON.stringify(all)); } catch (_) { }
+            return true;
+        }
+
+        async function onDeleteItem(e, item) {
+            e.stopPropagation();
+            if (!item) return;
+            if (db?.supported?.()) {
+                try { await db.removeHistory(item.id); } catch (_) { }
+            } else {
+                await deleteLegacyItem(item);
+            }
+            scheduleRefresh();
+        }
+
+        async function onClearAll() {
+            if (confirm('Are you sure you want to clear your entire browsing history?')) {
+                if (db?.supported?.()) {
+                    try { await db.clearHistory(); } catch (_) { }
+                }
+                try { localStorage.setItem('browsing-history', '[]'); } catch (_) { }
+                if (searchInput) searchInput.value = '';
+                scheduleRefresh(true);
+            }
+        }
+
+        let refreshTimer = null;
+        let refreshSeq = 0;
+
+        function scheduleRefresh(immediate = false) {
+            if (refreshTimer) clearTimeout(refreshTimer);
+            refreshTimer = setTimeout(() => refresh(), immediate ? 0 : 120);
+        }
+
+        async function refresh() {
+            const seq = ++refreshSeq;
+            const filter = String(searchInput?.value || '').trim();
+            const q = filter.toLowerCase();
+
+            // Make sure DB is ready.
+            try { await db.open(); } catch (_) { }
+
+            if (!container) return;
+
+            if (db?.supported?.()) {
+                const [items, total] = await Promise.all([
+                    db.getHistory({ query: q, limit: 2000 }).catch(() => []),
+                    (typeof db.count === 'function' ? db.count('history').catch(() => 0) : Promise.resolve(0))
+                ]);
+                if (seq !== refreshSeq) return;
+                renderHistory(items, { hasAny: total > 0, filter });
+                return;
+            }
+
+            const all = loadLegacyHistory();
+            const filtered = q ? all.filter((h) => matchesFilter(h, q)) : all;
+            // Show newest first.
+            const items = filtered.slice(-2000).reverse();
+            if (seq !== refreshSeq) return;
+            renderHistory(items, { hasAny: all.length > 0, filter });
+        }
+
+        clearBtn?.addEventListener('click', onClearAll);
+        searchInput?.addEventListener('input', () => scheduleRefresh());
+
+        bc?.addEventListener('message', (e) => {
+            const msg = e?.data || {};
+            const type = msg?.type;
+            if (type === 'history-changed') scheduleRefresh(true);
+            if (type === 'kv-changed' && msg?.payload?.key === 'theme') loadThemePreference();
+        });
+
+        await loadThemePreference();
+        await refresh();
+    </script>
+</body>
+
+</html>

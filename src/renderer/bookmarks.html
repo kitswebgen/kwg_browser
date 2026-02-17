@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookmarks | KITSWebGen</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #A8C7FA;
+            --card-hover: rgba(255, 255, 255, 0.08);
+            --surface: rgba(255, 255, 255, 0.05);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+                --glass-bg: rgba(255, 255, 255, 0.6);
+                --glass-border: rgba(255, 255, 255, 0.4);
+                --text-primary: #1F1F1F;
+                --text-secondary: #5F6368;
+                --accent-color: #0B57D0;
+                --card-hover: rgba(255, 255, 255, 0.8);
+                --surface: rgba(255, 255, 255, 0.5);
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-color: #A8C7FA;
+            --card-hover: rgba(255, 255, 255, 0.08);
+            --surface: rgba(255, 255, 255, 0.05);
+        }
+
+        :root[data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-primary: #1F1F1F;
+            --text-secondary: #5F6368;
+            --accent-color: #0B57D0;
+            --card-hover: rgba(255, 255, 255, 0.8);
+            --surface: rgba(255, 255, 255, 0.5);
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            margin: 0;
+            padding: 40px 60px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .header {
+            margin-bottom: 40px;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        h1 {
+            font-weight: 600;
+            font-size: 32px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .bookmarks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 24px;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .bookmark-card {
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bookmark-card:hover {
+            transform: translateY(-8px);
+            background: var(--card-hover);
+            border-color: var(--accent-color);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        .icon-box {
+            width: 56px;
+            height: 56px;
+            background: var(--glass-bg);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            font-size: 24px;
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s;
+        }
+
+        .bookmark-card:hover .icon-box {
+            background: var(--accent-color);
+            color: #000;
+            border-color: transparent;
+            transform: scale(1.1);
+        }
+
+        @media (prefers-color-scheme: light) {
+            .bookmark-card:hover .icon-box {
+                color: #fff;
+            }
+        }
+
+        .title {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 6px;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-primary);
+        }
+
+        .url {
+            font-size: 12px;
+            color: var(--text-secondary);
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0.8;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(234, 67, 53, 0.1);
+            color: #EA4335;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: #EA4335;
+            color: white;
+        }
+
+        .bookmark-card:hover .delete-btn {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+            </svg>
+            Bookmarks
+        </h1>
+    </div>
+
+    <div id="bookmarks-container" class="bookmarks-grid">
+        <!-- Dynamic Content -->
+    </div>
+
+    <script type="module">
+        import { db } from './db.js';
+
+        const container = document.getElementById('bookmarks-container');
+        const bc = (() => {
+            try { return typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('kits-db') : null; }
+            catch (_) { return null; }
+        })();
+
+        function applyTheme(theme) {
+            const mode = String(theme || 'system').toLowerCase();
+            if (mode === 'dark' || mode === 'light') document.documentElement.dataset.theme = mode;
+            else document.documentElement.removeAttribute('data-theme');
+        }
+
+        async function loadThemePreference() {
+            let theme = null;
+            try { theme = localStorage.getItem('theme'); } catch (_) { theme = null; }
+            if (!theme && db?.supported?.()) {
+                try { theme = await db.getKV('theme', null); } catch (_) { theme = null; }
+            }
+            applyTheme(theme || 'system');
+        }
+
+        function emptyState() {
+            container.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 60px; opacity: 0.6; font-size: 18px;">
+                    No bookmarks added yet.
+                </div>`;
+        }
+
+        function renderBookmarks(bookmarks) {
+            if (!Array.isArray(bookmarks) || bookmarks.length === 0) return emptyState();
+
+            const frag = document.createDocumentFragment();
+            for (const bm of bookmarks) {
+                let domain = '';
+                try { domain = new URL(bm.url).hostname; } catch (e) { }
+
+                const card = document.createElement('div');
+                card.className = 'bookmark-card';
+
+                const iconBox = document.createElement('div');
+                iconBox.className = 'icon-box';
+                const img = document.createElement('img');
+                img.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+                img.width = 28;
+                img.height = 28;
+                img.onerror = () => {
+                    img.style.display = 'none';
+                    iconBox.textContent = String(bm.title || 'B').charAt(0).toUpperCase() || 'B';
+                };
+                iconBox.appendChild(img);
+
+                const title = document.createElement('div');
+                title.className = 'title';
+                title.textContent = bm.title || 'Untitled';
+
+                const url = document.createElement('div');
+                url.className = 'url';
+                url.textContent = domain;
+
+                const del = document.createElement('div');
+                del.className = 'delete-btn';
+                del.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>`;
+                del.addEventListener('click', (e) => onDeleteBookmark(e, bm));
+
+                card.appendChild(iconBox);
+                card.appendChild(title);
+                card.appendChild(url);
+                card.appendChild(del);
+
+                card.onclick = (e) => {
+                    if (!e.target.closest('.delete-btn')) window.location.href = String(bm.url || '');
+                };
+                frag.appendChild(card);
+            }
+            container.replaceChildren(frag);
+        }
+
+        async function onDeleteBookmark(e, bm) {
+            e.stopPropagation();
+            if (!bm?.url) return;
+            if (confirm('Delete this bookmark?')) {
+                try { await db.removeBookmark(String(bm.url)); } catch (_) { }
+                await refresh();
+            }
+        }
+
+        let refreshSeq = 0;
+        async function refresh() {
+            const seq = ++refreshSeq;
+            try { await db.open(); } catch (_) { }
+            const bookmarks = await db.getBookmarks({ limit: 5000 }).catch(() => []);
+            if (seq !== refreshSeq) return;
+            renderBookmarks(bookmarks);
+        }
+
+        bc?.addEventListener('message', (e) => {
+            const msg = e?.data || {};
+            const type = msg?.type;
+            if (type === 'bookmarks-changed') refresh();
+            if (type === 'kv-changed' && msg?.payload?.key === 'theme') loadThemePreference();
+        });
+
+        await loadThemePreference();
+        await refresh();
+    </script>
+</body>
+
+</html>

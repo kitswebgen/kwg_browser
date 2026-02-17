@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KITS Browser</title>
+    <meta name="color-scheme" content="dark">
+
+    <style>
+        :root {
+            --bg: #04060a;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #eaf1ff;
+            --muted: rgba(255, 255, 255, 0.55);
+            --accent: #7da7f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: Inter, system-ui, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .meshGlow {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(125, 167, 240, 0.2), transparent 60%);
+            filter: blur(120px);
+            z-index: 1;
+            animation: pulse 6s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            from {
+                opacity: .6;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .card {
+            position: relative;
+            z-index: 2;
+            backdrop-filter: blur(40px);
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 52px 56px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7);
+            animation: intro 1.2s cubic-bezier(.2, .8, .2, 1);
+            transition: transform .25s ease;
+        }
+
+        @keyframes intro {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .logo {
+            width: 96px;
+            height: 96px;
+            margin: 0 auto 18px;
+            border-radius: 26px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.03));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 0 1px var(--border);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .logo img {
+            width: 60%;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 6px;
+            letter-spacing: -0.4px;
+        }
+
+        .tagline {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 26px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .progress {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), #c8dcff);
+            transition: width .2s ease;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .percent {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 4px;
+        }
+
+        .version {
+            position: fixed;
+            bottom: 14px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.2);
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+
+<body>
+
+<canvas id="bg"></canvas>
+<div class="meshGlow"></div>
+
+<div class="card" id="card">
+    <div class="logo"><img src="icon.png"></div>
+    <h1>KITS Browser</h1>
+    <div class="tagline">Powered by WebGen</div>
+
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    <div class="status" id="status">Initializing secure environment...</div>
+    <div class="percent" id="percent">0%</div>
+</div>
+
+<div class="version">v4.0 • Chromium Powered</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+
+<script>
+    const canvas = document.getElementById('bg');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 1000);
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(devicePixelRatio);
+
+    const geometry = new THREE.BufferGeometry();
+    const vertices = [];
+
+    for (let i = 0; i < 600; i++) {
+        vertices.push((Math.random() - 0.5) * 30);
+        vertices.push((Math.random() - 0.5) * 30);
+        vertices.push((Math.random() - 0.5) * 30);
+    }
+
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    const material = new THREE.PointsMaterial({ size: 0.05, color: 0x7da7f0 });
+    const points = new THREE.Points(geometry, material);
+    scene.add(points);
+
+    function animate() {
+        requestAnimationFrame(animate);
+        points.rotation.y += 0.0006;
+        points.rotation.x += 0.0002;
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        renderer.setSize(innerWidth, innerHeight);
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+    });
+
+    document.addEventListener('mousemove', e => {
+        const card = document.getElementById('card');
+        const x = (e.clientX / innerWidth - 0.5) * 12;
+        const y = (e.clientY / innerHeight - 0.5) * 12;
+        card.style.transform = `rotateX(${-y}deg) rotateY(${x}deg)`;
+    });
+
+    const statuses = [
+        "Initializing secure environment...",
+        "Loading Chromium engine...",
+        "Applying security policies...",
+        "Starting network services...",
+        "Optimizing performance...",
+        "Restoring session...",
+        "Preparing UI...",
+        "Almost ready..."
+    ];
+
+    let progress = 0;
+    let statusIndex = 0;
+
+    const bar = document.getElementById('bar');
+    const statusEl = document.getElementById('status');
+    const percentEl = document.getElementById('percent');
+
+    const interval = setInterval(() => {
+
+        progress += Math.random() * 6;
+
+        if (progress >= 100) {
+            progress = 100;
+            statusEl.textContent = "Launching browser...";
+            clearInterval(interval);
+
+            setTimeout(() => {
+                document.body.style.transition = "opacity .6s ease";
+                document.body.style.opacity = 0;
+            }, 800);
+        }
+
+        if (statusIndex < statuses.length - 1 && progress > (statusIndex + 1) * 12) {
+            statusIndex++;
+            statusEl.textContent = statuses[statusIndex];
+        }
+
+        bar.style.width = progress + "%";
+        percentEl.textContent = Math.floor(progress) + "%";
+
+    }, 180);
+</script>
+
+</body>
+
+</html>

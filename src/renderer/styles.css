@@ -1,0 +1,2231 @@
+:root {
+    /* Google Material Design 3 (approximate dark theme) */
+    color-scheme: dark;
+    --md-sys-color-background: #1E1F22;
+    /* Deep dark background */
+    --md-sys-color-surface: #2B2D31;
+    /* Slightly lighter surface for tabs/inactive */
+    --md-sys-color-surface-container: #383A40;
+    /* Container like omnibox */
+    --md-sys-color-primary: #A8C7FA;
+    /* Google Blue equivalent in dark mode */
+    --md-sys-color-on-primary: #003355;
+    --md-sys-color-secondary-container: #004A77;
+    /* Active tab accent */
+    --md-sys-color-on-surface: #E3E3E3;
+    /* Text */
+    --md-sys-color-on-surface-variant: #C4C7C5;
+    /* Secondary text */
+    --md-sys-color-outline: #8E918F;
+    --md-elevation-level1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+
+    --radius-full: 9999px;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+
+    --title-height: 40px;
+    --tab-height: 38px;
+
+    /* Semantic Glass Variables (Dark Default) */
+    --sys-glass-bg: rgba(30, 33, 40, 0.85);
+    /* Darker, more opaque for readability */
+    --sys-glass-element: rgba(255, 255, 255, 0.08);
+    --sys-glass-border: rgba(255, 255, 255, 0.1);
+    --sys-glass-highlight: rgba(255, 255, 255, 0.04);
+    --sys-glass-shadow: rgba(0, 0, 0, 0.5);
+    --sys-elevation-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --sys-focus-ring: rgba(168, 199, 250, 0.5);
+
+    /* Z-Index Hierarchy */
+    --z-webview: 0;
+    --z-chrome: 100;
+    --z-ai-panel: 200;
+    --z-overlay: 500;
+    --z-modal: 1000;
+    --z-menu: 1100;
+    --z-tooltip: 1200;
+    --z-notification: 1300;
+}
+
+::selection {
+    background-color: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+}
+
+:focus-visible {
+    outline: none;
+}
+
+button:focus-visible,
+.icon-btn:focus-visible,
+.secure-icon:focus-visible,
+.kits-btn:focus-visible,
+.close-btn:focus-visible,
+.download-action:focus-visible,
+.win-btn:focus-visible,
+.bookmarks-bar-item:focus-visible,
+.side-item:focus-visible {
+    box-shadow: 0 0 0 2px var(--sys-focus-ring);
+}
+
+/* Global Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    /* Thinner */
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(142, 145, 143, 0.4);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--md-sys-color-on-surface-variant);
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        color-scheme: light;
+        --md-sys-color-background: #F8F9FA;
+        /* Brighter background */
+        --md-sys-color-surface: #FFFFFF;
+        --md-sys-color-surface-container: #EEF2F9;
+        /* Slight blue tint */
+        --md-sys-color-primary: #1A73E8;
+        --md-sys-color-on-primary: #FFFFFF;
+        --md-sys-color-secondary-container: #D2E3FC;
+        --md-sys-color-on-surface: #202124;
+        --md-sys-color-on-surface-variant: #5F6368;
+        --md-sys-color-outline: #DADCE0;
+
+        /* Semantic Glass Variables (Light Mode) */
+        --sys-glass-bg: rgba(255, 255, 255, 0.85);
+        --sys-glass-border: rgba(0, 0, 0, 0.12);
+        --sys-glass-highlight: rgba(0, 0, 0, 0.04);
+        --sys-glass-shadow: rgba(60, 64, 67, 0.15);
+        --sys-elevation-shadow: 0 4px 12px rgba(60, 64, 67, 0.15);
+        --sys-focus-ring: rgba(26, 115, 232, 0.4);
+    }
+
+    .tab.active {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        background: #FFFFFF;
+        border-bottom: none;
+    }
+}
+
+/* Manual theme override (Settings → Appearance) */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --md-sys-color-background: #1E1F22;
+    --md-sys-color-surface: #2B2D31;
+    --md-sys-color-surface-container: #383A40;
+    --md-sys-color-primary: #A8C7FA;
+    --md-sys-color-on-primary: #003355;
+    --md-sys-color-secondary-container: #004A77;
+    --md-sys-color-on-surface: #E3E3E3;
+    --md-sys-color-on-surface-variant: #C4C7C5;
+    --md-sys-color-outline: #8E918F;
+
+    --sys-glass-bg: rgba(30, 33, 40, 0.9);
+    --sys-glass-element: rgba(255, 255, 255, 0.08);
+    --sys-glass-border: rgba(255, 255, 255, 0.1);
+    --sys-glass-highlight: rgba(255, 255, 255, 0.04);
+    --sys-glass-shadow: rgba(0, 0, 0, 0.5);
+    --sys-elevation-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --sys-focus-ring: rgba(168, 199, 250, 0.5);
+}
+
+:root[data-theme="light"] {
+    color-scheme: light;
+    --md-sys-color-background: #F3F3F3;
+    --md-sys-color-surface: #FFFFFF;
+    --md-sys-color-surface-container: #E3E3E3;
+    --md-sys-color-primary: #0B57D0;
+    --md-sys-color-on-primary: #FFFFFF;
+    --md-sys-color-secondary-container: #D3E3FD;
+    --md-sys-color-on-surface: #1F1F1F;
+    --md-sys-color-on-surface-variant: #444746;
+    --md-sys-color-outline: #747775;
+
+    --sys-glass-bg: rgba(245, 245, 245, 0.70);
+    --sys-glass-element: rgba(0, 0, 0, 0.06);
+    --sys-glass-border: rgba(0, 0, 0, 0.08);
+    --sys-glass-highlight: rgba(0, 0, 0, 0.03);
+    --sys-glass-shadow: rgba(0, 0, 0, 0.10);
+    --sys-elevation-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    --sys-focus-ring: rgba(11, 87, 208, 0.30);
+
+    /* Status Colors (Light) */
+    --sys-color-success: #1E8E3E;
+    --sys-color-warning: #F9AB00;
+    --sys-color-error: #D93025;
+    --sys-color-info: #1A73E8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Zen Mode */
+body.zen-mode #titleapi,
+body.zen-mode .browser-chrome {
+    display: none;
+}
+
+/* Ensure window controls are accessible in zen mode via hover or shortcut (simplified for now: just hide) */
+/* Actually, let's keep a tiny strip or key trigger. For this MVP, button toggles it. */
+
+/* Bookmarks Bar */
+.bookmarks-bar {
+    display: flex;
+    gap: 8px;
+    padding: 4px 12px;
+    background-color: var(--md-sys-color-background);
+    border-bottom: 1px solid var(--md-sys-color-outline);
+    /* Subtle separator */
+    overflow-x: auto;
+    height: 32px;
+    align-items: center;
+}
+
+.bookmarks-bar.hidden {
+    display: none;
+}
+
+.bookmark-item {
+    font-size: 11px;
+    padding: 4px 8px;
+    background-color: var(--md-sys-color-surface-container);
+    border-radius: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.bookmark-item:hover {
+    background-color: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    font-family: 'Google Sans', 'Roboto', 'Segoe UI', sans-serif;
+    /* Try Google Sans if installed */
+}
+
+input,
+textarea,
+[contenteditable="true"],
+#omnibox,
+#find-input,
+#notification,
+#notification-msg {
+    user-select: text;
+}
+
+body {
+    background-color: var(--md-sys-color-background);
+    color: var(--md-sys-color-on-surface);
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Window Title / Controls --- */
+/* --- Window Title / Controls --- */
+#titleapi {
+    display: flex;
+    align-items: center;
+    background-color: var(--md-sys-color-background);
+    height: var(--title-height);
+    -webkit-app-region: drag;
+    padding: 0 10px;
+    gap: 12px;
+    border-bottom: 1px solid var(--sys-glass-border);
+}
+
+/* MacOS: Add padding for traffic lights */
+body.platform-mac #titleapi {
+    padding-left: 80px;
+}
+
+body.platform-mac .window-controls {
+    display: none;
+}
+
+/* Windows: Custom Controls */
+body.platform-win .window-controls {
+    display: flex;
+    -webkit-app-region: no-drag;
+    margin-left: auto;
+    /* Push to right */
+    height: 100%;
+}
+
+body.platform-win .win-btn {
+    width: 46px;
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    /* Windows caption buttons usually default cursor */
+    transition: background-color 0.2s;
+    border-radius: 0;
+}
+
+body.platform-win .win-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--md-sys-color-on-surface);
+}
+
+body.platform-win #close-btn-win:hover {
+    background-color: #E81123;
+    color: white;
+}
+
+/* Icons for Windows buttons (using ::after for simplicity if not in HTML) */
+/* The HTML has empty buttons, so we need SVG or content. 
+   The current HTML has title attributes but no content? 
+   Let's check index.html again. It had empty buttons. 
+   We must add content or use CSS content. */
+
+body.platform-win #min-btn::after {
+    content: "─";
+    font-family: "Segoe UI Symbol", sans-serif;
+    font-size: 10px;
+}
+
+body.platform-win #max-btn::after {
+    content: "☐";
+    font-family: "Segoe UI Symbol", sans-serif;
+    font-size: 10px;
+}
+
+body.platform-win #close-btn-win::after {
+    content: "✕";
+    font-family: "Segoe UI Symbol", sans-serif;
+    font-size: 10px;
+}
+
+.drag-region {
+    flex-grow: 1;
+}
+
+/* Tabs inside the titlebar */
+#titleapi .titlebar-tabs {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    margin-bottom: 0;
+    overflow: hidden;
+    padding: 0;
+}
+
+/* Ensure tab interactions work inside draggable titlebar */
+#titleapi .tab,
+#titleapi .new-tab-btn,
+#titleapi .tab-count,
+#titleapi .tab-close-btn {
+    -webkit-app-region: no-drag;
+}
+
+/* --- Browser Area --- */
+.browser-chrome {
+    background-color: var(--md-sys-color-background);
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    /* Padding around the content */
+    position: relative;
+    z-index: var(--z-chrome);
+    transition: none;
+}
+
+/* --- Tabs --- */
+.tab-bar-container {
+    display: flex;
+    align-items: center;
+    height: 44px;
+    /* Slightly taller for modern look */
+    margin-bottom: 0;
+    overflow: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    min-width: 0;
+    padding: 0 4px;
+}
+
+.tab-bar-container::-webkit-scrollbar {
+    display: none;
+}
+
+.tabs {
+    display: flex;
+    gap: 6px;
+    flex-grow: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    min-width: 0;
+    scroll-behavior: smooth;
+    padding-top: 4px;
+    /* Space for shadow/active state */
+}
+
+.tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.tab {
+    background-color: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    padding: 0 16px;
+    border-radius: 12px 12px 0 0;
+    /* Top rounded only */
+    height: 36px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    min-width: 100px;
+    max-width: 240px;
+    flex: 0 1 240px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.1s;
+    position: relative;
+    border: none;
+    overflow: hidden;
+    white-space: nowrap;
+    margin-top: auto;
+}
+
+.tab-incognito {
+    width: 14px;
+    height: 14px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    opacity: 0.8;
+    flex-shrink: 0;
+}
+
+.tab.incognito .tab-incognito {
+    display: inline-flex !important;
+}
+
+.tab:hover:not(.active) {
+    background-color: var(--sys-glass-highlight);
+    color: var(--md-sys-color-on-surface);
+}
+
+.tab.active {
+    background-color: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.05);
+    z-index: 1;
+    /* Sit above others */
+}
+
+/* Chrome-like separator (optional, but clean) */
+.tab:not(:hover):not(.active)::after {
+    content: "";
+    position: absolute;
+    right: -3px;
+    height: 16px;
+    width: 1px;
+    background: var(--md-sys-color-outline);
+    opacity: 0.3;
+}
+
+.tab.dragging {
+    opacity: 0.5;
+    background: var(--sys-glass-highlight);
+}
+
+.tab-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    /* Favicons usually squares */
+    flex-shrink: 0;
+}
+
+.tab-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--md-sys-color-on-surface-variant);
+    border-top: 2px solid var(--md-sys-color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: none;
+    flex-shrink: 0;
+}
+
+.tab.loading .tab-icon {
+    display: none;
+}
+
+.tab.loading .tab-spinner {
+    display: block;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.tab-close-btn {
+    margin-left: auto;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 14px;
+    opacity: 0;
+    /* Cleaner fade than visibility */
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab:hover .tab-close-btn {
+    opacity: 1;
+}
+
+.tab-close-btn:hover {
+    background-color: var(--sys-glass-element);
+    color: var(--md-sys-color-on-surface);
+}
+
+.new-tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--md-sys-color-on-surface-variant);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 6px;
+    transition: background-color 0.2s;
+}
+
+.new-tab-btn:hover {
+    background-color: var(--sys-glass-element);
+    color: var(--md-sys-color-on-surface);
+}
+
+/* --- Toolbar --- */
+.toolbar {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    gap: 12px;
+    background: var(--md-sys-color-surface);
+    /* Matches active tab */
+    border-bottom: 1px solid var(--sys-glass-border);
+    height: 52px;
+    /* Standard prominent toolbar */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    z-index: 10;
+}
+
+/* Override previous "floating" look for a solid, reliable bar */
+.toolbar {
+    border-radius: 0;
+    margin: 0;
+}
+
+.nav-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.toolbar button {
+    background: none;
+    border: none;
+    color: var(--md-sys-color-on-surface);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    /* Softer square */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.toolbar button:hover:not(:disabled) {
+    background: var(--sys-glass-element);
+    color: var(--md-sys-color-primary);
+}
+
+.toolbar button:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+/* --- Omnibox --- */
+.omnibox-container {
+    flex-grow: 1;
+    background-color: var(--md-sys-color-surface-container);
+    border-radius: 99px;
+    /* Pill */
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    height: 36px;
+    border: 1px solid transparent;
+    /* Prepare for focus */
+    transition: all 0.2s;
+    max-width: 800px;
+    /* Readability limit */
+    margin: 0 auto;
+}
+
+.omnibox-container:hover {
+    background-color: color-mix(in srgb, var(--md-sys-color-surface-container) 95%, white);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.omnibox-container:focus-within {
+    background-color: var(--md-sys-color-surface);
+    border-color: var(--md-sys-color-primary);
+    box-shadow: 0 0 0 2px var(--sys-focus-ring);
+}
+
+#omnibox {
+    background: transparent;
+    border: none;
+    color: var(--md-sys-color-on-surface);
+    width: 100%;
+    outline: none;
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.secure-icon {
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    color: var(--md-sys-color-on-surface-variant);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.secure-icon:hover {
+    background: var(--sys-glass-element);
+    color: var(--md-sys-color-on-surface);
+}
+
+.secure-icon:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--sys-focus-ring);
+}
+
+.secure-icon[data-state="secure"] {
+    color: var(--sys-color-success);
+}
+
+.secure-icon[data-state="warning"] {
+    color: var(--sys-color-warning);
+}
+
+.secure-icon[data-state="neutral"] {
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.suggestions-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--md-sys-color-surface-container);
+    border-radius: 0 0 16px 16px;
+    margin-top: 4px;
+    box-shadow: 0 6px 18px var(--sys-glass-shadow);
+    overflow: hidden;
+    z-index: var(--z-menu);
+    max-height: 320px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--sys-glass-border);
+}
+
+.suggestions-list.hidden {
+    display: none;
+}
+
+.suggestion-item {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--md-sys-color-on-surface);
+    transition: background 0.2s;
+}
+
+.suggestion-item:hover,
+.suggestion-item.selected {
+    background-color: var(--sys-glass-element);
+}
+
+.suggestion-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
+}
+
+/* Secure Icon Removed */
+
+/* --- AI Side Panel --- */
+.ai-panel {
+    width: 350px;
+    background: linear-gradient(135deg, var(--md-sys-color-surface) 0%, var(--sys-glass-bg) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid var(--sys-glass-border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-top-left-radius: 24px;
+    margin: 0 8px 0 0;
+    box-shadow: -10px 0 30px var(--sys-glass-shadow);
+    z-index: var(--z-ai-panel);
+}
+
+.ai-panel.hidden {
+    width: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateX(20px);
+}
+
+.ai-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    font-weight: 600;
+    color: var(--md-sys-color-primary);
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.chat-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scrollbar-width: none;
+    padding-right: 4px;
+}
+
+.chat-container::-webkit-scrollbar {
+    display: none;
+}
+
+.chat-message {
+    padding: 12px 16px;
+    border-radius: 16px;
+    max-width: 85%;
+    font-size: 13px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    box-shadow: 0 6px 18px var(--sys-glass-shadow);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chat-message.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--md-sys-color-primary) 0%, #7da7f0 100%);
+    color: #002244;
+    border-bottom-right-radius: 4px;
+    font-weight: 500;
+}
+
+.chat-message.ai {
+    align-self: flex-start;
+    background-color: var(--md-sys-color-surface-container);
+    color: var(--md-sys-color-on-surface);
+    border-bottom-left-radius: 4px;
+    border: 1px solid var(--sys-glass-border);
+}
+
+.ai-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--sys-glass-highlight);
+    padding: 8px 8px 8px 16px;
+    border-radius: 24px;
+    border: 1px solid var(--sys-glass-border);
+    transition: all 0.3s;
+}
+
+.ai-input-wrapper:focus-within {
+    border-color: var(--md-sys-color-primary);
+    background: var(--sys-glass-element);
+}
+
+.ai-input {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    color: var(--md-sys-color-on-surface);
+    outline: none;
+    font-size: 13px;
+}
+
+.ai-send-btn {
+    background: var(--md-sys-color-primary);
+    border: none;
+    color: var(--md-sys-color-on-primary);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.ai-send-btn:hover {
+    transform: scale(1.05);
+}
+
+/* --- Main Content Area (Webview + AI Panel) --- */
+.main-content {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+    z-index: 1;
+}
+
+/* --- Webview Container --- */
+.webview-container {
+    flex-grow: 1;
+    position: relative;
+    background-color: var(--md-sys-color-surface);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    overflow: hidden;
+    margin: 0 8px;
+    /* Slight margin to float the content area */
+    display: flex;
+    /* Ensure webview fills it */
+    box-shadow: var(--sys-elevation-shadow);
+}
+
+/* Webview is a native layer; hide it when full-screen modals are open to avoid overlay issues. */
+body.overlay-open .webview-container {
+    visibility: hidden;
+}
+
+webview {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: none;
+}
+
+webview.active {
+    display: flex;
+}
+
+/* --- Side Navigation --- */
+.side-nav {
+    width: 72px;
+    /* Slightly wider */
+    background-color: var(--md-sys-color-background);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-right: 1px solid var(--sys-glass-border);
+    z-index: 10;
+}
+
+.side-nav-top,
+.side-nav-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* Tighter gap */
+    align-items: center;
+    width: 100%;
+}
+
+.side-item {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--md-sys-color-on-surface-variant);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+    border: none;
+    position: relative;
+}
+
+.side-item:hover {
+    background-color: var(--sys-glass-highlight);
+    color: var(--md-sys-color-on-surface);
+}
+
+.side-item.active {
+    background-color: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    /* Softer shadow */
+}
+
+/* --- Center Content & Status Bar --- */
+.center-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+/* --- Modals & Glass Elements --- */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    transition: opacity 0.3s;
+}
+
+.modal.hidden {
+    display: none;
+    opacity: 0;
+}
+
+.modal-content.glass {
+    background: var(--sys-glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--sys-glass-border);
+    border-radius: 20px;
+    width: 450px;
+    padding: 24px;
+    box-shadow: var(--sys-elevation-shadow);
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPop {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.setting-group {
+    margin-bottom: 24px;
+}
+
+.setting-group h3 {
+    font-size: 13px;
+    color: var(--md-sys-color-primary);
+    margin-bottom: 12px;
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 14px;
+}
+
+.kits-select {
+    width: 100%;
+    background: var(--sys-glass-highlight);
+    border: 1px solid var(--sys-glass-border);
+    color: var(--md-sys-color-on-surface);
+    padding: 8px;
+    border-radius: 8px;
+    outline: none;
+}
+
+.kits-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.kits-btn.secondary {
+    background: var(--sys-glass-element);
+    color: var(--md-sys-color-on-surface);
+}
+
+.kits-btn.danger {
+    background: rgba(234, 67, 53, 0.14);
+    color: #EA4335;
+    border: 1px solid rgba(234, 67, 53, 0.25);
+}
+
+.kits-btn.danger:hover {
+    transform: translateY(-1px);
+    filter: none;
+    background: rgba(234, 67, 53, 0.22);
+}
+
+.kits-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.2);
+}
+
+.kits-input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--sys-glass-border);
+    background: var(--sys-glass-element);
+    color: var(--md-sys-color-on-surface);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.kits-input:focus {
+    border-color: var(--md-sys-color-primary);
+    background: var(--md-sys-color-surface-container);
+    box-shadow: 0 0 0 3px var(--sys-focus-ring);
+}
+
+.kits-input::placeholder {
+    color: var(--md-sys-color-on-surface-variant);
+    opacity: 0.65;
+}
+
+/* --- Form Controls --- */
+input[type="checkbox"],
+input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--md-sys-color-outline);
+    border-radius: 4px;
+    background-color: transparent;
+    cursor: pointer;
+    vertical-align: middle;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+input[type="radio"] {
+    border-radius: 50%;
+}
+
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+    background-color: var(--md-sys-color-primary);
+    border-color: var(--md-sys-color-primary);
+}
+
+input[type="checkbox"]:checked::after {
+    content: "";
+    /* Checkmark */
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 4px;
+    height: 9px;
+    border: solid var(--md-sys-color-on-primary);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+input[type="radio"]:checked::after {
+    content: "";
+    /* Dot */
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    width: 8px;
+    height: 8px;
+    background-color: var(--md-sys-color-on-primary);
+    border-radius: 50%;
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+    box-shadow: 0 0 0 2px var(--sys-focus-ring);
+}
+
+/* --- Command Palette --- */
+.palette-content.glass {
+    width: 600px;
+    background: var(--sys-glass-bg);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--sys-glass-border);
+    border-radius: 16px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--sys-elevation-shadow);
+    z-index: var(--z-modal);
+}
+
+.palette-input-wrapper {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--sys-glass-border);
+}
+
+.palette-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--md-sys-color-primary);
+    margin-right: 16px;
+}
+
+#palette-input {
+    background: transparent;
+    border: none;
+    color: var(--md-sys-color-on-surface);
+    font-size: 16px;
+    width: 100%;
+    outline: none;
+}
+
+.palette-results {
+    padding: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.palette-group {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--md-sys-color-on-surface-variant);
+    padding: 12px 12px 6px;
+    letter-spacing: 1px;
+}
+
+.palette-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    gap: 12px;
+    transition: background 0.2s;
+}
+
+.palette-item:hover,
+.palette-item.active {
+    background: var(--sys-glass-highlight);
+}
+
+.palette-item.active {
+    border: 1px solid color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent);
+}
+
+.p-item-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--sys-glass-highlight);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.palette-item span {
+    flex-grow: 1;
+    font-size: 14px;
+}
+
+kbd {
+    background: var(--sys-glass-element);
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+/* --- Privacy Dashboard --- */
+.privacy-content {
+    width: 500px;
+}
+
+.privacy-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: var(--sys-glass-highlight);
+    padding: 20px;
+    border-radius: 16px;
+    text-align: center;
+    border: 1px solid var(--sys-glass-border);
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--md-sys-color-primary);
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.privacy-list h3 {
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.tracker-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--sys-glass-border);
+    font-size: 13px;
+}
+
+.badged {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.badged.blocked {
+    background: rgba(234, 67, 53, 0.1);
+    color: #EA4335;
+}
+
+/* --- Animations --- */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tab {
+    animation: slideIn 0.2s cubic-bezier(0.2, 0.0, 0, 1.0);
+}
+
+/* --- Page Progress Bar --- */
+.page-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--md-sys-color-primary), var(--sys-color-info));
+    z-index: var(--z-notification);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px var(--md-sys-color-primary);
+}
+
+.page-progress.active {
+    width: 75%;
+    animation: progressPulse 2s ease-in-out infinite;
+}
+
+.page-progress.done {
+    width: 100%;
+    opacity: 0;
+    transition: width 0.2s ease, opacity 0.3s ease 0.2s;
+}
+
+@keyframes progressPulse {
+
+    0%,
+    100% {
+        width: 30%;
+    }
+
+    50% {
+        width: 75%;
+    }
+}
+
+/* --- Tab Counter Badge --- */
+.tab-count {
+    min-width: 20px;
+    height: 20px;
+    background: var(--md-sys-color-surface-container);
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    margin-left: 8px;
+    padding: 0 4px;
+    border: 1px solid var(--sys-glass-border);
+}
+
+/* --- Download Toast --- */
+.download-toast {
+    position: fixed;
+    bottom: 40px;
+    right: 16px;
+    cursor: pointer;
+    background: var(--sys-glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--sys-glass-border);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: var(--z-notification);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    min-width: 300px;
+}
+
+.download-toast.hidden {
+    display: none;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.download-toast-icon {
+    font-size: 24px;
+}
+
+.download-toast-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.download-filename {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+
+.download-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--sys-glass-element);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.download-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #A8C7FA, #5E97F6);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.download-status-text {
+    font-size: 11px;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+/* --- Downloads Modal --- */
+.downloads-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.download-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 12px;
+    border-radius: 14px;
+    background: var(--sys-glass-highlight);
+    border: 1px solid var(--sys-glass-border);
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.download-item:hover {
+    background: var(--sys-glass-element);
+    border-color: color-mix(in srgb, var(--md-sys-color-primary) 35%, var(--sys-glass-border));
+    transform: translateY(-1px);
+}
+
+.download-item .d-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--sys-glass-element);
+    border: 1px solid var(--sys-glass-border);
+    flex: 0 0 auto;
+    font-size: 16px;
+}
+
+.download-item .d-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.download-item .d-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--md-sys-color-on-surface);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.download-item .d-sub {
+    font-size: 11px;
+    color: var(--md-sys-color-on-surface-variant);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.9;
+}
+
+.download-item .d-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+
+.download-action {
+    background: var(--sys-glass-element);
+    border: 1px solid var(--sys-glass-border);
+    color: var(--md-sys-color-on-surface);
+    padding: 6px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+}
+
+.download-action:hover {
+    background: var(--sys-glass-highlight);
+    border-color: color-mix(in srgb, var(--md-sys-color-primary) 35%, var(--sys-glass-border));
+}
+
+.download-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--sys-glass-border);
+    color: var(--md-sys-color-on-surface-variant);
+    background: var(--sys-glass-highlight);
+}
+
+.download-badge.completed {
+    color: #81C995;
+    border-color: rgba(129, 201, 149, 0.35);
+    background: rgba(129, 201, 149, 0.08);
+}
+
+.download-badge.interrupted,
+.download-badge.cancelled {
+    color: #FEBC2E;
+    border-color: rgba(254, 188, 46, 0.35);
+    background: rgba(254, 188, 46, 0.08);
+}
+
+.download-badge.failed {
+    color: #EA4335;
+    border-color: rgba(234, 67, 53, 0.35);
+    background: rgba(234, 67, 53, 0.08);
+}
+
+/* --- Icon Button (Bookmark Star in Omnibox) --- */
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--md-sys-color-on-surface-variant);
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.icon-btn:hover {
+    color: var(--md-sys-color-primary);
+    background: var(--sys-glass-element);
+}
+
+.icon-btn.bookmarked {
+    color: var(--md-sys-color-primary);
+    background: color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent);
+}
+
+.icon-btn.bookmarked svg {
+    fill: currentColor;
+}
+
+/* --- Close Button (modal) --- */
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 20px;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.close-btn:hover {
+    background: var(--sys-glass-element);
+    color: var(--md-sys-color-on-surface);
+}
+
+/* --- Zen Mode Refinements --- */
+body.zen-mode .side-nav,
+body.zen-mode .status-bar,
+body.zen-mode .bookmarks-bar,
+body.zen-mode #titleapi,
+body.zen-mode .browser-chrome {
+    display: none !important;
+}
+
+body.zen-mode .webview-container {
+    margin: 0;
+    border-radius: 0;
+}
+
+body.zen-mode .main-content {
+    height: 100vh;
+}
+
+/* --- Bookmarks Bar items --- */
+.bookmarks-bar-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--md-sys-color-on-surface-variant);
+    background: transparent;
+    border: none;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.bookmarks-bar-item:hover {
+    background: var(--sys-glass-element);
+    color: var(--md-sys-color-on-surface);
+}
+
+.bookmarks-bar-item img {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+}
+
+/* --- Find in Page Bar --- */
+.find-bar {
+    position: fixed;
+    top: 80px;
+    right: 16px;
+    z-index: var(--z-overlay);
+    animation: slideDown 0.25s ease;
+}
+
+.find-bar.hidden {
+    display: none;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.find-bar-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--sys-glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--sys-glass-border);
+    border-radius: 12px;
+    padding: 8px 14px;
+    box-shadow: var(--sys-elevation-shadow);
+}
+
+#find-input {
+    background: transparent;
+    border: none;
+    color: var(--md-sys-color-on-surface);
+    font-size: 13px;
+    width: 200px;
+    outline: none;
+}
+
+.find-count {
+    font-size: 11px;
+    color: var(--md-sys-color-on-surface-variant);
+    opacity: 0.7;
+    white-space: nowrap;
+}
+
+.find-nav-btn {
+    background: none;
+    border: none;
+    color: var(--md-sys-color-on-surface-variant);
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.find-nav-btn:hover {
+    background: var(--sys-glass-element);
+    color: var(--md-sys-color-on-surface);
+}
+
+/* --- Zoom Indicator --- */
+.zoom-indicator {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--sys-glass-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--sys-glass-border);
+    border-radius: 10px;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--md-sys-color-primary);
+    z-index: var(--z-tooltip);
+    box-shadow: var(--sys-elevation-shadow);
+    animation: fadeIn 0.2s ease;
+    pointer-events: none;
+}
+
+.zoom-indicator.hidden {
+    display: none;
+}
+
+/* --- Google Apps Menu --- */
+.google-apps-menu {
+    position: fixed;
+    background: var(--sys-glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--sys-glass-border);
+    border-radius: 16px;
+    padding: 16px;
+    z-index: var(--z-menu);
+    box-shadow: var(--sys-elevation-shadow);
+    width: 320px;
+    /* Fixed width */
+    animation: modalPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.google-apps-menu.hidden {
+    display: none;
+}
+
+.g-apps-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--sys-glass-border);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--md-sys-color-on-surface);
+}
+
+.g-apps-header .close-btn {
+    width: 24px;
+    height: 24px;
+    margin: 0;
+}
+
+.g-apps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.g-app-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 4px;
+    /* Taller touch targets */
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    color: var(--md-sys-color-on-surface);
+}
+
+.g-app-item:hover {
+    background: var(--sys-glass-element);
+    transform: translateY(-2px);
+    color: var(--md-sys-color-primary);
+}
+
+.g-account-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--md-sys-color-on-surface);
+    transition: background 0.2s;
+}
+
+.g-account-btn:hover {
+    background: var(--sys-glass-element);
+}
+
+.g-app-icon {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+
+.g-app-item:hover .g-app-icon {
+    transform: scale(1.1);
+}
+
+.g-app-name {
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.g-account-section {
+    border-top: 1px solid var(--sys-glass-border);
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.g-account-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--md-sys-color-on-surface);
+    transition: background 0.2s;
+}
+
+.g-account-btn:hover {
+    background: var(--sys-glass-element);
+}
+
+/* --- Tab Context Menu --- */
+.tab-context-menu {
+    position: fixed;
+    background: var(--sys-glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--sys-glass-border);
+    border-radius: 12px;
+    border-radius: 12px;
+    padding: 6px;
+    z-index: var(--z-menu);
+    box-shadow: var(--sys-elevation-shadow);
+    min-width: 200px;
+    animation: modalPop 0.15s ease;
+}
+
+.tab-context-menu.hidden {
+    display: none;
+}
+
+.app-menu {
+    position: fixed;
+    background: var(--sys-glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--sys-glass-border);
+    border-radius: 14px;
+    border-radius: 14px;
+    padding: 6px;
+    z-index: var(--z-menu);
+    box-shadow: var(--sys-elevation-shadow);
+    min-width: 240px;
+    animation: modalPop 0.15s ease;
+}
+
+.app-menu.hidden {
+    display: none;
+}
+
+.app-menu-item {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--md-sys-color-on-surface);
+    transition: background 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.app-menu-item kbd {
+    opacity: 0.6;
+    font-size: 11px;
+}
+
+.app-menu-item:hover {
+    background: var(--sys-glass-element);
+}
+
+.app-menu-sep {
+    height: 1px;
+    background: var(--sys-glass-border);
+    margin: 4px 8px;
+}
+
+.ctx-item {
+    padding: 10px 14px;
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--md-sys-color-on-surface);
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ctx-item:hover {
+    background: var(--sys-glass-element);
+}
+
+.ctx-item.danger {
+    color: #EA4335;
+}
+
+.ctx-item.danger:hover {
+    background: rgba(234, 67, 53, 0.1);
+}
+
+.ctx-separator {
+    height: 1px;
+    background: var(--sys-glass-border);
+    margin: 4px 8px;
+}
+
+/* --- Security Warning Banner --- */
+.security-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(90deg, #EA4335, #d9382e);
+    color: white;
+    padding: 8px 20px;
+    display: flex;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: var(--z-notification);
+    font-size: 13px;
+    font-weight: 500;
+    animation: slideDown 0.3s ease;
+    box-shadow: 0 4px 20px rgba(234, 67, 53, 0.3);
+}
+
+.security-banner.hidden {
+    display: none;
+}
+
+.security-banner .find-nav-btn {
+    color: white;
+}
+
+/* --- Pinned Tab --- */
+.tab.pinned {
+    min-width: auto;
+    max-width: 40px;
+    padding: 0 8px;
+    justify-content: center;
+}
+
+.tab.pinned .tab-title,
+.tab.pinned .tab-close-btn {
+    display: none;
+}
+
+.tab.pinned .tab-icon {
+    display: block !important;
+}
+
+/* --- Tab Audio Indicator --- */
+.tab-audio-indicator {
+    width: 14px;
+    height: 14px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.7;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* --- Tab title overflow --- */
+.tab-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- Refresh Button Loading Animation --- */
+#refresh-btn.loading svg {
+    animation: spin 1s linear infinite;
+}
+
+/* --- Premium Polish Overrides --- */
+
+/* Smoother Tab Transitions & Glow */
+.tab {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border: 1px solid transparent;
+}
+
+.tab:hover {
+    background: linear-gradient(to bottom, var(--sys-glass-element), var(--sys-glass-highlight));
+    border-top: 1px solid var(--sys-glass-border);
+}
+
+.tab.active {
+    background: var(--md-sys-color-surface);
+    border: 1px solid var(--sys-glass-border);
+    border-bottom: none;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 2;
+    /* Ensure it stays on top */
+}
+
+.tab.active::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--md-sys-color-primary);
+    border-radius: 4px 4px 0 0;
+    opacity: 1;
+}
+
+.tab:hover:not(.active) {
+    background: var(--sys-glass-highlight);
+    border: 1px solid var(--sys-glass-border);
+}
+
+/* Glassmorphism Toolbar */
+.toolbar {
+    background: var(--sys-glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--sys-glass-border);
+    box-shadow: 0 8px 32px var(--sys-glass-shadow);
+}
+
+/* Omnibox Glow */
+/* Omnibox Glow */
+.omnibox-container:focus-within {
+    background: var(--sys-glass-bg);
+    box-shadow: 0 0 0 2px var(--sys-focus-ring), 0 0 15px var(--sys-focus-ring);
+    border: 1px solid var(--sys-focus-ring);
+}
+
+/* Button Micro-interactions */
+.toolbar button:active,
+.nav-controls button:active {
+    transform: scale(0.92);
+}
+
+/* Scrollbar refinement removed to use global semantic styles */
+
+/* Context Menu Polish */
+.tab-context-menu {
+    border: 1px solid var(--sys-glass-border);
+    box-shadow: var(--sys-elevation-shadow);
+}
+
+/* Webview Background to prevent flash */
+.browser-webview {
+    background: var(--md-sys-color-background);
+}
+
+/* --- Responsiveness --- */
+@media (max-width: 800px) {
+    .side-nav {
+        width: 48px;
+    }
+
+    .side-item {
+        width: 32px;
+        height: 32px;
+    }
+
+    .ai-panel {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 100;
+        width: 90%;
+        max-width: 350px;
+    }
+
+    .omnibox-container {
+        padding: 0 12px;
+    }
+
+    /* Hide some toolbar items on smaller screens */
+    #reader-btn,
+    #zen-btn {
+        display: none;
+    }
+}
+
+@media (max-width: 600px) {
+    .tab {
+        min-width: 40px;
+        padding: 0 6px;
+    }
+
+    .tab-title {
+        display: none;
+    }
+
+    .tab.active .tab-title {
+        display: block;
+    }
+
+    .nav-controls {
+        gap: 0;
+    }
+
+    .toolbar button {
+        width: 32px;
+        height: 32px;
+    }
+
+    #forward-btn {
+        display: none;
+    }
+}
+
+/* --- Status Bar --- */
+/* --- Status Bar --- */
+#status-bar {
+    height: 28px;
+    /* Taller for readability */
+    background-color: var(--sys-glass-bg);
+    /* Glass effect */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--sys-glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    font-size: 11px;
+    color: var(--md-sys-color-on-surface-variant);
+    z-index: var(--z-chrome);
+    user-select: none;
+    transition: background-color 0.2s;
+}
+
+#status-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 70%;
+}
+
+#network-speed {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 10px;
+    opacity: 0.8;
+    min-width: 140px;
+    text-align: right;
+    color: var(--md-sys-color-primary);
+}
