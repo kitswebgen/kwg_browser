@@ -1,17 +1,36 @@
 {
-  "name": "webbrower",
+  "name": "kits-browser",
+  "productName": "KITS Browser",
   "version": "1.0.0",
+  "description": "Ultra Faster Speed Browsing - Powered by KITS WebGen",
   "main": "src/main.js",
+  "author": "KITS WebGen",
   "scripts": {
     "start": "node scripts/start-electron.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "electron-builder -w"
+  },
+  "build": {
+    "appId": "com.kitswebgen.browser",
+    "productName": "KITS Browser",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "src/renderer/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "KITS Browser"
+    }
   },
   "keywords": [],
-  "author": "",
   "license": "ISC",
-  "description": "",
   "devDependencies": {
-    "electron": "^40.4.1"
+    "electron": "^40.4.1",
+    "electron-builder": "^26.7.0"
   },
   "dependencies": {
     "electron-context-menu": "^3.6.1",
