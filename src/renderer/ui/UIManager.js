@@ -498,6 +498,7 @@ export class UIManager {
 
         document.getElementById('zen-btn').onclick = () => this.toggleZenMode();
         document.getElementById('reader-btn').onclick = () => this.toggleReaderMode();
+        document.getElementById('ai-toggle-btn').onclick = () => { if (window.toggleAI) window.toggleAI(); };
         document.getElementById('bookmark-btn').onclick = () => this.bookmarkCurrentPage();
         document.getElementById('menu-btn').onclick = (e) => { e.stopPropagation(); this.toggleAppMenu(); };
         document.getElementById('sidebar-settings-btn').addEventListener('click', () => this.TM.createTab('settings.html'));
@@ -563,11 +564,11 @@ export class UIManager {
 
         // Sidebar
         document.querySelectorAll('.side-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const title = item.getAttribute('title');
+            item.addEventListener('click', () => {
+                const title = item.getAttribute('title');
 
-                    document.querySelectorAll('.side-item').forEach(i => i.classList.remove('active'));
-                    item.classList.add('active');
+                document.querySelectorAll('.side-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
 
                 if (title === 'Settings') {
                     this.TM.createTab('settings.html');
@@ -1053,6 +1054,7 @@ export class UIManager {
             switch (cmd) {
                 case 'new-tab': this.TM.createTab(); break;
                 case 'new-incognito-tab': this.newIncognitoTab(); break;
+                case 'toggle-ai': if (window.toggleAI) window.toggleAI(); break;
                 case 'toggle-zen': this.toggleZenMode(); break;
                 case 'toggle-reader': this.toggleReaderMode(); break;
                 case 'open-history': this.TM.createTab('history.html'); break;
@@ -1119,6 +1121,7 @@ export class UIManager {
                 { cmd: 'open-privacy', label: 'Privacy Dashboard', icon: '🛡️' },
                 { cmd: 'clear-browsing-data', label: 'Clear Browsing Data', icon: '🧹', kbd: 'Ctrl+Shift+Del' },
                 { cmd: 'toggle-bookmarks-bar', label: 'Toggle Bookmarks Bar', icon: '★', kbd: 'Ctrl+Shift+B' },
+                { cmd: 'toggle-ai', label: 'Toggle AI Panel', icon: '🤖', kbd: 'Ctrl+J' },
                 { cmd: 'toggle-zen', label: 'Toggle Zen Mode', icon: '🧘' },
                 { cmd: 'toggle-reader', label: 'Reader Mode', icon: '📖' },
                 { cmd: 'screenshot', label: 'Screenshot', icon: '📸', kbd: 'Ctrl+Shift+S' }

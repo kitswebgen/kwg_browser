@@ -103,7 +103,12 @@ const adBlockList = [
     'tpc.googlesyndication.com', 'ad.doubleclick.net',
     'static.ads-twitter.com', 'ads.linkedin.com',
     'facebook.com/tr', 'connect.facebook.net/en_US/fbevents',
-    'bat.bing.com', 'sc-static.net', 'sentry.io'
+    'bat.bing.com', 'sc-static.net', 'sentry.io',
+    'ads.tiktok.com', 'analytics.tiktok.com', 'pixel.reddit.com',
+    'ads.pinterest.com', 'ct.pinterest.com', 'c.bing.com',
+    'ads-api.twitter.com', 'static.ads-twitter.com',
+    'ads.yahoo.com', 'analytics.yahoo.com', 'gemini.yahoo.com',
+    'ad.mail.ru', 'top-fwz1.mail.ru', 'counter.yadro.ru'
 ];
 
 // Dangerous URL patterns
@@ -773,15 +778,35 @@ ipcMain.on('window-max', () => {
 ipcMain.on('window-close', () => mainWindow?.close());
 
 // AI Chat
-ipcMain.handle('ai-chat', async (event, prompt) => {
-    const p = sanitize(prompt);
-    log.info(`[AI] ${p.substring(0, 80)}`);
-    const lower = p.toLowerCase();
-    if (lower.includes('summarize')) return "I can help summarize the current page. Click 'Summarize' or just ask!";
-    if (lower.includes('who are you') || lower.includes('what are you')) return 'I am KITS AI — your intelligent research assistant built into the browser.';
-    if (lower.includes('help')) return 'I can: summarize pages, answer questions, help with research. Shortcuts: Ctrl+K (commands), Ctrl+F (find), Ctrl+D (bookmark).';
-    if (lower.includes('shortcut') || lower.includes('keyboard')) return 'Shortcuts:\n• Ctrl+T — New tab\n• Ctrl+W — Close tab\n• Ctrl+L — Focus URL bar\n• Ctrl+F — Find in page\n• Ctrl+D — Bookmark\n• Ctrl+K — Command Palette\n• Ctrl+Shift+S — Screenshot\n• F11 — Fullscreen\n• F12 — DevTools';
-    return `KITS AI: I've processed your query about "${p}". How else can I assist?`;
+// OpenAI Integration
+const OpenAI = require('openai');
+// Replace with your actual key or use process.env.OPENAI_API_KEY
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'sk-proj-PLACEHOLDER' });
+
+ipcMain.handle('ai-chat', async (event, prompt, context) => {
+    try {
+        const p = sanitize(prompt);
+        log.info(`[AI] Request: ${p.substring(0, 50)}...`);
+
+        // Context-aware system prompt
+        let sysPrompt = "You are KITS AI, a helpful browser assistant. Answer concisely.";
+        if (context) {
+            sysPrompt += `\n\nCurrent Page Context:\nTitle: ${context.title}\nUrl: ${context.url}\nContent Snippet: ${context.content ? context.content.substring(0, 1000) : ''}`;
+        }
+
+        const completion = await openai.chat.completions.create({
+            messages: [
+                { role: "system", content: sysPrompt },
+                { role: "user", content: p }
+            ],
+            model: "gpt-3.5-turbo",
+        });
+
+        return completion.choices[0].message.content;
+    } catch (error) {
+        log.error('[AI] OpenAI Error:', error);
+        return "I'm having trouble connecting to the AI service right now. Please check your API Key.";
+    }
 });
 
 function fetchJson(url, timeoutMs = 2500) {

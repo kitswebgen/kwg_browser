@@ -24,7 +24,8 @@ export class TabManager {
         if (isIncognito) webview.setAttribute('partition', 'incognito');
         webview.src = url;
         webview.setAttribute('allowpopups', '');
-        webview.setAttribute('webpreferences', 'contextIsolation=true, sandbox=true');
+        webview.setAttribute('preload', 'file:///' + window.location.pathname.replace('index.html', 'webview-preload.js').replace(/\\/g, '/'));
+        webview.setAttribute('webpreferences', 'contextIsolation=false, sandbox=true, nodeIntegration=false');
         webview.id = `webview-${id}`;
         webview.className = 'browser-webview';
 
@@ -164,6 +165,17 @@ export class TabManager {
 
         tab.webviewEl.addEventListener('did-navigate', () => { if (this.activeTabId === tab.id && this.callbacks.onUpdateUI) this.callbacks.onUpdateUI(); });
         tab.webviewEl.addEventListener('did-navigate-in-page', () => { if (this.activeTabId === tab.id && this.callbacks.onUpdateUI) this.callbacks.onUpdateUI(); });
+
+        // IPC from Webview (Preload)
+        tab.webviewEl.addEventListener('ipc-message', (e) => {
+            if (e.channel === 'page-content-result') {
+                tab.pageContent = e.args[0]; // { content, meta }
+                // If this is the active tab, notify AI Panel if needed
+                if (this.activeTabId === tab.id && this.callbacks.onPageContentUpdate) {
+                    this.callbacks.onPageContentUpdate(tab.pageContent);
+                }
+            }
+        });
 
         // Audio detection
         tab.webviewEl.addEventListener('media-started-playing', () => {

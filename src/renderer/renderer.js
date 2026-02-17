@@ -2,6 +2,7 @@
 import { TabManager } from './managers/TabManager.js';
 import { ProfileManager } from './managers/ProfileManager.js';
 import { UIManager } from './ui/UIManager.js';
+import { AIPanel } from './ui/AIPanel.js';
 import { db } from './db.js';
 
 // Global instances
@@ -84,6 +85,7 @@ const TM = new TabManager(tabsContainer, webviewContainer, {
     onZoomUpdate: (level) => UI.showZoomIndicator(level)
 });
 
+const AI = new AIPanel(TM);
 // Link UI with TM
 UI.TM = TM;
 

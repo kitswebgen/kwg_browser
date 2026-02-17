@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     toggleFullscreen: () => ipcRenderer.send('toggle-fullscreen'),
 
     // AI & Automation
-    aiChat: (prompt) => ipcRenderer.invoke('ai-chat', prompt),
+    aiChat: (prompt, context) => ipcRenderer.invoke('ai-chat', prompt, context),
     automateWeb: (script) => ipcRenderer.invoke('automate-web', script),
     capturePage: () => ipcRenderer.invoke('capture-page'),
 
