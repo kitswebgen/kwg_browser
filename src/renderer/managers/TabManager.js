@@ -36,10 +36,21 @@ export class TabManager {
         tabEl.innerHTML = `
             <div class="tab-spinner"></div>
             <span class="tab-incognito" title="Incognito" aria-label="Incognito" style="display:none;">🕶</span>
-            <img class="tab-icon" src="" style="display:none" />
+            <img class="tab-icon" src="" style="display:none" alt="Favicon" />
+            <svg class="tab-icon-default" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:block; opacity:0.6;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
             <span class="tab-title">Loading...</span>
             <span class="tab-audio-indicator" style="display:none">🔊</span>
-            <span class="tab-close-btn">&times;</span>`;
+            <div class="tab-close-btn" title="Close Tab">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </div>`;
+
 
         this.webviewContainer.appendChild(webview);
         this.tabsContainer.appendChild(tabEl);
@@ -147,9 +158,16 @@ export class TabManager {
         tab.webviewEl.addEventListener('page-favicon-updated', (e) => {
             if (e.favicons?.length > 0) {
                 const iconEl = tab.tabEl.querySelector('.tab-icon');
+                const defaultIconEl = tab.tabEl.querySelector('.tab-icon-default');
+
                 iconEl.src = e.favicons[0];
                 iconEl.style.display = 'block';
-                iconEl.onerror = () => { iconEl.style.display = 'none'; };
+                if (defaultIconEl) defaultIconEl.style.display = 'none';
+
+                iconEl.onerror = () => {
+                    iconEl.style.display = 'none';
+                    if (defaultIconEl) defaultIconEl.style.display = 'block';
+                };
             }
         });
 

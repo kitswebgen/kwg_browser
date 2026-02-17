@@ -53,7 +53,7 @@ export class UIManager {
         this.theme = localStorage.getItem('theme') || 'system';
     }
 
-    init() {
+    async init() {
         this.setupEventListeners();
         this.setupOmnibox();
         this.setupCommandPalette();
@@ -62,19 +62,30 @@ export class UIManager {
         this.setupDownloads();
         this.setupOverlayGuards();
 
+        // Close menus on resize
+        window.addEventListener('resize', () => {
+            this.closeAppMenu();
+            this.closeContextMenus();
+        });
+
         // Restore search engine selection
         if (this.elements.engineSelect) this.elements.engineSelect.value = this.currentSearchEngine;
         if (this.elements.themeSelect) this.elements.themeSelect.value = this.theme;
         this.applyTheme(this.theme);
 
         // Hydrate preferences/bookmarks from IndexedDB if available.
-        this.hydrateFromDB();
+        await this.hydrateFromDB();
 
         // Keep UI in sync with internal pages (webviews) that also write to IndexedDB.
         this.setupDbBroadcastSync();
 
         // Global Clock
         this.startGlobalClock();
+    }
+
+    closeContextMenus() {
+        document.getElementById('tab-context-menu')?.classList.add('hidden');
+        // Add other context menus here if any
     }
 
     setupOverlayGuards() {

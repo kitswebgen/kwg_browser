@@ -25,6 +25,10 @@ export class GoogleAppsManager {
                 this.close();
             }
         });
+
+        window.addEventListener('resize', () => {
+            if (this.isOpen) this.close();
+        });
     }
 
     createMenu() {

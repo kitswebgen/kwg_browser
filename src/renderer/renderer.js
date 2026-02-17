@@ -711,6 +711,19 @@ if (window.electronAPI) {
     }
 }
 
+function renderProfileSection(profile) {
+    const btn = document.getElementById('user-btn');
+    if (!btn) return;
+
+    if (profile) {
+        btn.title = `Profile: ${profile.name || profile.email}`;
+        btn.innerHTML = `<div style="background:var(--md-sys-color-primary); color:white; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold;">${(profile.name?.[0] || profile.email?.[0] || 'U').toUpperCase()}</div>`;
+    } else {
+        btn.title = 'KITS Profile (Sign In)';
+        btn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
+    }
+}
+
 // Init
 // Init
 async function init() {
@@ -722,7 +735,7 @@ async function init() {
     } catch (_) { }
 
     await PM.init();
-    UI.init();
+    await UI.init();
 
     // Restore session
     let restored = false;
