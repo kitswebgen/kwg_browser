@@ -30,76 +30,92 @@ export class GoogleAppsManager {
     createMenu() {
         this.menu = document.createElement('div');
         this.menu.className = 'google-apps-menu hidden';
+        this.menu.innerHTML = ''; // Clear
 
-        // Define app items for cleaner generation
+        // 1. Header
+        const header = document.createElement('div');
+        header.className = 'g-apps-header';
+
+        const title = document.createElement('span');
+        title.textContent = 'Google Apps';
+        title.style.marginLeft = '4px';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'close-btn';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.onclick = (e) => { e.stopPropagation(); this.close(); };
+
+        header.append(title, closeBtn);
+
+        // 2. Apps Grid
+        const grid = document.createElement('div');
+        grid.className = 'g-apps-grid';
+
         const apps = [
-            { name: 'Gmail', url: 'https://mail.google.com/mail/u/0/', icon: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg' },
-            { name: 'Drive', url: 'https://drive.google.com/drive/', icon: 'https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg' },
+            { name: 'Search', url: 'https://www.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg' }, // Fixed logo
+            { name: 'Gmail', url: 'https://mail.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg' },
+            { name: 'Drive', url: 'https://drive.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg' },
             { name: 'YouTube', url: 'https://www.youtube.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg' },
             { name: 'Calendar', url: 'https://calendar.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg' },
             { name: 'Photos', url: 'https://photos.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/2/2c/Google_Photos_icon_%282020%29.svg' },
-            { name: 'Maps', url: 'https://maps.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/a/aa/Google_Maps_icon_%282020%29.svg' }
+            { name: 'Maps', url: 'https://maps.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/a/aa/Google_Maps_icon_%282020%29.svg' },
+            { name: 'Meet', url: 'https://meet.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg' },
+            { name: 'News', url: 'https://news.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/d/da/Google_News_icon.svg' }
         ];
 
-        const appsHtml = apps.map(app => `
-            <div class="g-app-item" data-url="${app.url}">
-                <img src="${app.icon}" class="g-app-icon" alt="${app.name}">
-                <span class="g-app-name">${app.name}</span>
-            </div>
-        `).join('');
+        apps.forEach(app => {
+            const item = document.createElement('div');
+            item.className = 'g-app-item';
+            item.title = app.name;
 
-        this.menu.innerHTML = `
-            <div class="g-apps-header">
-                <span>Google Apps</span>
-                <span class="close-btn" style="width:24px; height:24px; font-size:16px;">&times;</span>
-            </div>
-            
-            <div class="g-apps-grid">
-                ${appsHtml}
-            </div>
-            
-            <div class="g-account-section">
-                <div class="g-account-btn" id="g-add-account">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="16"></line>
-                        <line x1="8" y1="12" x2="16" y2="12"></line>
-                    </svg>
-                    <span>Add another account</span>
-                </div>
-                <div class="g-account-btn" id="g-manage-account">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    <span>Manage accounts</span>
-                </div>
-            </div>
-        `;
+            const img = document.createElement('img');
+            img.src = app.icon;
+            img.className = 'g-app-icon';
+            img.alt = app.name;
+            // Fallback for broken icons
+            img.onerror = () => { img.src = 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg'; };
 
-        document.body.appendChild(this.menu);
+            const name = document.createElement('span');
+            name.className = 'g-app-name';
+            name.textContent = app.name;
 
-        // Event Listeners
-        this.menu.querySelector('.close-btn').onclick = () => this.close();
-
-        this.menu.querySelectorAll('.g-app-item').forEach(item => {
+            item.append(img, name);
             item.onclick = () => {
-                const url = item.getAttribute('data-url');
-                this.TM.createTab(url);
+                this.TM.createTab(app.url);
                 this.close();
             };
+            grid.appendChild(item);
         });
 
-        this.menu.querySelector('#g-add-account').onclick = () => {
-            // Standard URL for adding a Google session
-            this.TM.createTab('https://accounts.google.com/AddSession');
-            this.close();
-        };
+        // 3. Footer / Account
+        const footer = document.createElement('div');
+        footer.className = 'g-account-section';
 
-        this.menu.querySelector('#g-manage-account').onclick = () => {
-            this.TM.createTab('https://myaccount.google.com/');
-            this.close();
-        };
+        const addAcct = document.createElement('div');
+        addAcct.className = 'g-account-btn';
+        addAcct.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+            <span>Add another account</span>`;
+        addAcct.onclick = () => { this.TM.createTab('https://accounts.google.com/AddSession'); this.close(); };
+
+        const manageAcct = document.createElement('div');
+        manageAcct.className = 'g-account-btn';
+        manageAcct.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span>Manage accounts</span>`;
+        manageAcct.onclick = () => { this.TM.createTab('https://myaccount.google.com/'); this.close(); };
+
+        footer.append(addAcct, manageAcct);
+
+        this.menu.append(header, grid, footer);
+        document.body.appendChild(this.menu);
     }
 
     toggle() {

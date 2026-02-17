@@ -1757,31 +1757,47 @@ body.zen-mode .main-content {
 .google-apps-menu {
     position: fixed;
     background: var(--sys-glass-bg);
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--sys-glass-border);
     border-radius: 16px;
     padding: 16px;
     z-index: var(--z-menu);
     box-shadow: var(--sys-elevation-shadow);
-    min-width: 200px;
-    animation: modalPop 0.15s ease;
+    width: 320px;
+    /* Fixed width */
+    animation: modalPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.google-apps-menu.hidden {
+    display: none;
 }
 
 .g-apps-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--sys-glass-border);
     font-size: 14px;
     font-weight: 600;
     color: var(--md-sys-color-on-surface);
 }
 
+.g-apps-header .close-btn {
+    width: 24px;
+    height: 24px;
+    margin: 0;
+}
+
 .g-apps-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+    gap: 8px;
     margin-bottom: 16px;
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 .g-app-item {
@@ -1789,25 +1805,54 @@ body.zen-mode .main-content {
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    padding: 12px 8px;
+    padding: 12px 4px;
+    /* Taller touch targets */
     border-radius: 12px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s ease;
+    text-align: center;
+    color: var(--md-sys-color-on-surface);
 }
 
 .g-app-item:hover {
     background: var(--sys-glass-element);
+    transform: translateY(-2px);
+    color: var(--md-sys-color-primary);
+}
+
+.g-account-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--md-sys-color-on-surface);
+    transition: background 0.2s;
+}
+
+.g-account-btn:hover {
+    background: var(--sys-glass-element);
 }
 
 .g-app-icon {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+
+.g-app-item:hover .g-app-icon {
+    transform: scale(1.1);
 }
 
 .g-app-name {
     font-size: 12px;
-    text-align: center;
-    color: var(--md-sys-color-on-surface);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 .g-account-section {
@@ -1815,7 +1860,7 @@ body.zen-mode .main-content {
     padding-top: 12px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
 }
 
 .g-account-btn {
