@@ -4,8 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KITSWebGen</title>
+    <title>KITS Browser</title>
+    <meta name="color-scheme" content="dark">
+
     <style>
+        :root {
+            --bg: #07090d;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #e9eefc;
+            --muted: rgba(255, 255, 255, 0.55);
+            --accent: #7da7f0;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,374 +24,221 @@
         }
 
         body {
-            background: #0a0a0f;
-            color: white;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: radial-gradient(circle at 20% 20%, #0d1220, #05070b 70%);
+            color: var(--text);
+            font-family: Inter, system-ui, sans-serif;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             overflow: hidden;
-            position: relative;
-        }
-
-        /* Animated gradient background */
-        .bg-gradient {
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 50%);
-            animation: bgPulse 4s ease-in-out infinite alternate;
-        }
-
-        @keyframes bgPulse {
-            0% {
-                opacity: 0.6;
-                transform: scale(1);
-            }
-
-            100% {
-                opacity: 1;
-                transform: scale(1.05);
-            }
-        }
-
-        /* Grid overlay */
-        .grid-overlay {
-            position: absolute;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 60px 60px;
-            animation: gridMove 20s linear infinite;
-        }
-
-        @keyframes gridMove {
-            0% {
-                transform: translate(0, 0);
-            }
-
-            100% {
-                transform: translate(60px, 60px);
-            }
-        }
-
-        .splash-content {
-            position: relative;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 24px;
-        }
-
-        /* Logo */
-        .logo-container {
-            width: 96px;
-            height: 96px;
-            position: relative;
-            animation: logoFloat 3s ease-in-out infinite;
-        }
-
-        @keyframes logoFloat {
-
-            0%,
-            100% {
-                transform: translateY(0);
-            }
-
-            50% {
-                transform: translateY(-8px);
-            }
-        }
-
-        .logo-ring {
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            border-top-color: #3b82f6;
-            border-right-color: #8b5cf6;
-            animation: ringRotate 2s linear infinite;
-        }
-
-        .logo-ring:nth-child(2) {
-            inset: 6px;
-            border-top-color: #06b6d4;
-            border-left-color: #3b82f6;
-            animation-duration: 3s;
-            animation-direction: reverse;
-        }
-
-        .logo-ring:nth-child(3) {
-            inset: 12px;
-            border-bottom-color: #8b5cf6;
-            border-right-color: #06b6d4;
-            animation-duration: 4s;
-        }
-
-        @keyframes ringRotate {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .logo-center {
-            position: absolute;
-            inset: 16px;
-            border-radius: 18px;
-            background: transparent;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
-            box-shadow: 0 0 40px rgba(59, 130, 246, 0.3);
         }
 
-        .logo-center img {
-            width: 100%;
-            height: 100%;
-            display: block;
-            object-fit: cover;
+        canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
         }
 
-        .brand-name {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #e2e8f0, #ffffff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: fadeInUp 0.8s ease-out 0.3s both;
+        .glow {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(125, 167, 240, 0.15), transparent 60%);
+            filter: blur(120px);
+            z-index: 1;
         }
 
-        .brand-tagline {
+        .card {
+            position: relative;
+            z-index: 2;
+            backdrop-filter: blur(30px);
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 48px 52px;
+            width: 380px;
+            text-align: center;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+            transition: transform .3s ease;
+        }
+
+        .logo {
+            width: 92px;
+            height: 92px;
+            margin: 0 auto 18px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.03));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 0 1px var(--border);
+        }
+
+        .logo img {
+            width: 60%;
+        }
+
+        h1 {
+            font-size: 30px;
+            margin-bottom: 6px;
+        }
+
+        .tagline {
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.6);
-            font-weight: 500;
-            letter-spacing: 1.5px;
+            color: var(--muted);
+            margin-bottom: 24px;
+            letter-spacing: 1px;
             text-transform: uppercase;
-            animation: fadeInUp 0.8s ease-out 0.5s both;
-            margin-bottom: 4px;
         }
 
-        .brand-subline {
-            font-size: 11px;
-            color: #A8C7FA;
-            /* Primary theme color */
-            font-weight: 400;
-            letter-spacing: 1px;
-            opacity: 0.9;
-            animation: fadeInUp 0.8s ease-out 0.6s both;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Progress bar */
-        .splash-progress {
-            width: 200px;
-            height: 3px;
+        .progress {
+            width: 100%;
+            height: 6px;
             background: rgba(255, 255, 255, 0.06);
-            border-radius: 4px;
+            border-radius: 999px;
             overflow: hidden;
-            margin-top: 16px;
-            animation: fadeInUp 0.8s ease-out 0.7s both;
+            margin-bottom: 8px;
         }
 
-        .splash-progress-fill {
+        .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
-            background-size: 200% 100%;
-            border-radius: 4px;
-            animation: progressFill 2.5s ease-in-out forwards, shimmer 1.5s ease-in-out infinite;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), #c3d7ff);
+            transition: width .25s ease;
         }
 
-        @keyframes progressFill {
-            0% {
-                width: 0%;
-            }
-
-            30% {
-                width: 40%;
-            }
-
-            60% {
-                width: 65%;
-            }
-
-            80% {
-                width: 85%;
-            }
-
-            100% {
-                width: 100%;
-            }
+        .status {
+            font-size: 12px;
+            color: var(--muted);
+            height: 14px;
         }
 
-        @keyframes shimmer {
-            0% {
-                background-position: 200% 0;
-            }
-
-            100% {
-                background-position: -200% 0;
-            }
-        }
-
-        .splash-status {
+        .percent {
             font-size: 11px;
-            color: rgba(255, 255, 255, 0.3);
-            animation: fadeInUp 0.8s ease-out 0.9s both;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 4px;
         }
 
-        /* Version badge */
-        .version-badge {
-            position: absolute;
-            bottom: 20px;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.15);
+        .version {
+            position: fixed;
+            bottom: 14px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.2);
             letter-spacing: 1px;
-        }
-
-        /* Floating particles */
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: rgba(59, 130, 246, 0.3);
-            border-radius: 50%;
-            animation: float 6s ease-in-out infinite;
-        }
-
-        .particle:nth-child(1) {
-            left: 15%;
-            top: 20%;
-            animation-delay: 0s;
-            animation-duration: 7s;
-        }
-
-        .particle:nth-child(2) {
-            left: 75%;
-            top: 30%;
-            animation-delay: 1s;
-            animation-duration: 8s;
-            background: rgba(139, 92, 246, 0.3);
-        }
-
-        .particle:nth-child(3) {
-            left: 40%;
-            top: 70%;
-            animation-delay: 2s;
-            animation-duration: 6s;
-            background: rgba(6, 182, 212, 0.3);
-        }
-
-        .particle:nth-child(4) {
-            left: 85%;
-            top: 65%;
-            animation-delay: 0.5s;
-            animation-duration: 9s;
-        }
-
-        .particle:nth-child(5) {
-            left: 25%;
-            top: 80%;
-            animation-delay: 1.5s;
-            animation-duration: 7s;
-            background: rgba(139, 92, 246, 0.2);
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-                opacity: 0.3;
-            }
-
-            25% {
-                transform: translate(20px, -30px) scale(1.5);
-                opacity: 0.6;
-            }
-
-            50% {
-                transform: translate(-10px, -60px) scale(1);
-                opacity: 0.3;
-            }
-
-            75% {
-                transform: translate(30px, -30px) scale(1.3);
-                opacity: 0.5;
-            }
         }
     </style>
 </head>
 
 <body>
-    <div class="bg-gradient"></div>
-    <div class="grid-overlay"></div>
 
-    <!-- Floating particles -->
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
+<canvas id="bg"></canvas>
+<div class="glow"></div>
 
-    <div class="splash-content">
-        <div class="logo-container">
-            <div class="logo-ring"></div>
-            <div class="logo-ring"></div>
-            <div class="logo-ring"></div>
-            <div class="logo-center"><img src="icon.png" alt="KITS Browser"></div>
-        </div>
-        <div class="brand-name">KITS BROWSER</div>
-        <div class="brand-tagline">Powered by KITS WebGen</div>
-        <div class="brand-subline">Ultra Faster Speed Browsing &bull; More Robust</div>
-
-        <div class="splash-progress">
-            <div class="splash-progress-fill"></div>
-        </div>
-        <div class="splash-status">Initializing secure environment...</div>
+<div class="card" id="card">
+    <div class="logo">
+        <img src="icon.png">
     </div>
 
-    <div class="version-badge">v4.0 &middot; Chromium Powered</div>
+    <h1>KITS Browser</h1>
+    <div class="tagline">Powered by WebGen</div>
 
-    <script>
-        const statuses = [
-            'Initializing secure environment...',
-            'Loading Chromium engine...',
-            'Configuring security policies...',
-            'Setting up ad blocker...',
-            'Restoring session...',
-            'Almost ready...'
-        ];
-        let i = 0;
-        const statusEl = document.querySelector('.splash-status');
-        const interval = setInterval(() => {
-            i++;
-            if (i < statuses.length) statusEl.textContent = statuses[i];
-        }, 400);
-    </script>
+    <div class="progress">
+        <div class="progress-fill" id="bar"></div>
+    </div>
+
+    <div class="status" id="status">Initializing secure environment...</div>
+    <div class="percent" id="percent">0%</div>
+</div>
+
+<div class="version">v4.0 • Chromium Powered</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+
+<script>
+    const canvas = document.getElementById('bg');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(devicePixelRatio);
+
+    const particles = 300;
+    const geometry = new THREE.BufferGeometry();
+    const positions = [];
+
+    for (let i = 0; i < particles; i++) {
+        positions.push((Math.random() - 0.5) * 20);
+        positions.push((Math.random() - 0.5) * 20);
+        positions.push((Math.random() - 0.5) * 20);
+    }
+
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+    const material = new THREE.PointsMaterial({ size: 0.05, color: 0x7da7f0 });
+    const points = new THREE.Points(geometry, material);
+    scene.add(points);
+
+    function animate() {
+        requestAnimationFrame(animate);
+        points.rotation.y += 0.0008;
+        points.rotation.x += 0.0003;
+        renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+        renderer.setSize(innerWidth, innerHeight);
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+    });
+
+    document.addEventListener('mousemove', e => {
+        const card = document.getElementById('card');
+        const x = (e.clientX / innerWidth - 0.5) * 10;
+        const y = (e.clientY / innerHeight - 0.5) * 10;
+        card.style.transform = `rotateX(${-y}deg) rotateY(${x}deg)`;
+    });
+
+    const statuses = [
+        "Initializing secure environment...",
+        "Loading Chromium engine...",
+        "Applying security policies...",
+        "Starting network services...",
+        "Optimizing performance...",
+        "Restoring session...",
+        "Almost ready..."
+    ];
+
+    let progress = 0;
+    let statusIndex = 0;
+
+    const bar = document.getElementById('bar');
+    const statusEl = document.getElementById('status');
+    const percentEl = document.getElementById('percent');
+
+    const interval = setInterval(() => {
+        progress += Math.random() * 8;
+
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+            statusEl.textContent = "Launching browser...";
+        }
+
+        if (statusIndex < statuses.length - 1 && progress > (statusIndex + 1) * 14) {
+            statusIndex++;
+            statusEl.textContent = statuses[statusIndex];
+        }
+
+        bar.style.width = progress + "%";
+        percentEl.textContent = Math.floor(progress) + "%";
+
+    }, 200);
+</script>
+
 </body>
 
 </html>
