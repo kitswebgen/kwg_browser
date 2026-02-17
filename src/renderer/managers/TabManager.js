@@ -177,6 +177,20 @@ export class TabManager {
             }
         });
 
+        tab.webviewEl.addEventListener('update-target-url', (e) => {
+            if (this.activeTabId === tab.id) {
+                const sb = document.getElementById('status-bar');
+                if (sb) {
+                    if (e.url) {
+                        sb.textContent = e.url;
+                        sb.classList.add('visible');
+                    } else {
+                        sb.classList.remove('visible');
+                    }
+                }
+            }
+        });
+
         // Audio detection
         tab.webviewEl.addEventListener('media-started-playing', () => {
             const audioEl = tab.tabEl.querySelector('.tab-audio-indicator');

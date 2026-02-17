@@ -1,6 +1,7 @@
 
 import { TabManager } from './managers/TabManager.js';
 import { ProfileManager } from './managers/ProfileManager.js';
+import { GoogleAppsManager } from './managers/GoogleAppsManager.js';
 import { UIManager } from './ui/UIManager.js';
 import { AIPanel } from './ui/AIPanel.js';
 import { db } from './db.js';
@@ -23,6 +24,7 @@ const UI = new UIManager(null, PM);
 
 const TM = new TabManager(tabsContainer, webviewContainer, {
     onUpdateUI: () => UI.updateUI(),
+    onPageContentUpdate: (data) => AI.handlePageContent(data),
     onTabCountUpdate: (count) => {
         const countEl = document.getElementById('tab-count');
         if (countEl) countEl.textContent = count;

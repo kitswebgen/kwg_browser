@@ -26,8 +26,24 @@ function attemptSkipAds() {
     }
 }
 
-// Run ad skipper every second
-setInterval(attemptSkipAds, 1000);
+// Use MutationObserver for performance instead of setInterval
+const observer = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+        if (m.type === 'childList' || m.type === 'attributes') {
+            attemptSkipAds();
+            // Debounce if needed, but skip checks are fast
+        }
+    }
+});
+
+// Start observing
+if (document.body) {
+    observer.observe(document.body, { childList: true, subtree: true });
+} else {
+    document.addEventListener('DOMContentLoaded', () => {
+        observer.observe(document.body, { childList: true, subtree: true });
+    });
+}
 
 
 // =========================================================

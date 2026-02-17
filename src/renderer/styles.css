@@ -34,6 +34,16 @@
     --sys-glass-shadow: rgba(0, 0, 0, 0.3);
     --sys-elevation-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     --sys-focus-ring: rgba(168, 199, 250, 0.4);
+
+    /* Z-Index Hierarchy */
+    --z-webview: 0;
+    --z-chrome: 100;
+    --z-ai-panel: 200;
+    --z-overlay: 500;
+    --z-modal: 1000;
+    --z-menu: 1100;
+    --z-tooltip: 1200;
+    --z-notification: 1300;
 }
 
 ::selection {
@@ -340,11 +350,11 @@ body.platform-win #close-btn-win::after {
     background-color: var(--md-sys-color-background);
     display: flex;
     flex-direction: column;
-    padding: 8px 8px calc(8px + var(--omnibox-overlay-space, 0px)) 8px;
+    padding: 8px;
     /* Padding around the content */
     position: relative;
-    z-index: 20;
-    transition: padding-bottom 160ms ease;
+    z-index: var(--z-chrome);
+    transition: none;
 }
 
 /* --- Tabs --- */
@@ -657,7 +667,7 @@ body.platform-win #close-btn-win::after {
     margin-top: 4px;
     box-shadow: 0 6px 18px var(--sys-glass-shadow);
     overflow: hidden;
-    z-index: 9999;
+    z-index: var(--z-menu);
     max-height: 320px;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -706,6 +716,7 @@ body.platform-win #close-btn-win::after {
     border-top-left-radius: 24px;
     margin: 0 8px 0 0;
     box-shadow: -10px 0 30px var(--sys-glass-shadow);
+    z-index: var(--z-ai-panel);
 }
 
 .ai-panel.hidden {
@@ -1075,8 +1086,10 @@ webview.active {
     backdrop-filter: blur(24px);
     border: 1px solid var(--sys-glass-border);
     border-radius: 16px;
+    border-radius: 16px;
     overflow: hidden;
     box-shadow: var(--sys-elevation-shadow);
+    z-index: var(--z-modal);
 }
 
 .palette-input-wrapper {
@@ -1241,7 +1254,7 @@ kbd {
     width: 0;
     height: 3px;
     background: linear-gradient(90deg, #A8C7FA, #7da7f0, #5E97F6);
-    z-index: 9999;
+    z-index: var(--z-notification);
     transition: width 0.3s ease;
     box-shadow: 0 0 10px rgba(168, 199, 250, 0.5);
 }
@@ -1300,7 +1313,7 @@ kbd {
     display: flex;
     align-items: center;
     gap: 14px;
-    z-index: 9998;
+    z-index: var(--z-notification);
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     min-width: 300px;
@@ -1580,7 +1593,7 @@ body.zen-mode .main-content {
     position: fixed;
     top: 80px;
     right: 16px;
-    z-index: 9000;
+    z-index: var(--z-overlay);
     animation: slideDown 0.25s ease;
 }
 
@@ -1662,7 +1675,7 @@ body.zen-mode .main-content {
     font-size: 14px;
     font-weight: 600;
     color: var(--md-sys-color-primary);
-    z-index: 9500;
+    z-index: var(--z-tooltip);
     box-shadow: var(--sys-elevation-shadow);
     animation: fadeIn 0.2s ease;
     pointer-events: none;
@@ -1672,6 +1685,20 @@ body.zen-mode .main-content {
     display: none;
 }
 
+/* --- Google Apps Menu --- */
+.google-apps-menu {
+    position: fixed;
+    background: var(--sys-glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--sys-glass-border);
+    border-radius: 16px;
+    padding: 16px;
+    z-index: var(--z-menu);
+    box-shadow: var(--sys-elevation-shadow);
+    min-width: 200px;
+    animation: modalPop 0.15s ease;
+}
+
 /* --- Tab Context Menu --- */
 .tab-context-menu {
     position: fixed;
@@ -1679,8 +1706,9 @@ body.zen-mode .main-content {
     backdrop-filter: blur(20px);
     border: 1px solid var(--sys-glass-border);
     border-radius: 12px;
+    border-radius: 12px;
     padding: 6px;
-    z-index: 9999;
+    z-index: var(--z-menu);
     box-shadow: var(--sys-elevation-shadow);
     min-width: 200px;
     animation: modalPop 0.15s ease;
@@ -1696,8 +1724,9 @@ body.zen-mode .main-content {
     backdrop-filter: blur(20px);
     border: 1px solid var(--sys-glass-border);
     border-radius: 14px;
+    border-radius: 14px;
     padding: 6px;
-    z-index: 9999;
+    z-index: var(--z-menu);
     box-shadow: var(--sys-elevation-shadow);
     min-width: 240px;
     animation: modalPop 0.15s ease;
@@ -1775,9 +1804,10 @@ body.zen-mode .main-content {
     color: white;
     padding: 8px 20px;
     display: flex;
+    display: flex;
     align-items: center;
     gap: 10px;
-    z-index: 10000;
+    z-index: var(--z-notification);
     font-size: 13px;
     font-weight: 500;
     animation: slideDown 0.3s ease;
@@ -1981,4 +2011,28 @@ body.zen-mode .main-content {
     #forward-btn {
         display: none;
     }
+}
+
+/* --- Status Bar Overlay --- */
+#status-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    background: var(--md-sys-color-surface-container);
+    color: var(--md-sys-color-on-surface);
+    padding: 2px 8px;
+    font-size: 11px;
+    border-top-right-radius: 8px;
+    z-index: var(--z-tooltip);
+    max-width: 50%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+#status-bar.visible {
+    opacity: 1;
 }

@@ -307,8 +307,7 @@ export class UIManager {
         }
         active.webviewEl.loadURL(input);
         omnibox.blur();
-        suggestionsList.classList.add('hidden');
-        this._setOmniboxOverlaySpace(0);
+        this.elements.suggestionsList.classList.add('hidden');
     }
 
     setupOmnibox() {
@@ -318,7 +317,7 @@ export class UIManager {
             clearTimeout(this.suggestionDebounce);
             this.selectedSuggestionIndex = -1;
             const query = omnibox.value.trim();
-            if (query.length < 2) { suggestionsList.classList.add('hidden'); this._setOmniboxOverlaySpace(0); return; }
+            if (query.length < 2) { suggestionsList.classList.add('hidden'); return; }
 
             this.suggestionDebounce = setTimeout(async () => {
                 try {
@@ -344,7 +343,7 @@ export class UIManager {
                     });
 
                     this.renderSuggestions(combined);
-                } catch (e) { suggestionsList.classList.add('hidden'); this._setOmniboxOverlaySpace(0); }
+                } catch (e) { suggestionsList.classList.add('hidden'); }
             }, 200);
         });
 
@@ -365,10 +364,10 @@ export class UIManager {
                 this.highlightSuggestion(items);
             }
             else if (e.key === 'Enter') { e.preventDefault(); this.navigateOmnibox(); }
-            else if (e.key === 'Escape') { suggestionsList.classList.add('hidden'); this._setOmniboxOverlaySpace(0); this.selectedSuggestionIndex = -1; }
+            else if (e.key === 'Escape') { suggestionsList.classList.add('hidden'); this.selectedSuggestionIndex = -1; }
         });
 
-        omnibox.addEventListener('blur', () => setTimeout(() => { suggestionsList.classList.add('hidden'); this._setOmniboxOverlaySpace(0); this.selectedSuggestionIndex = -1; }, 200));
+        omnibox.addEventListener('blur', () => setTimeout(() => { suggestionsList.classList.add('hidden'); this.selectedSuggestionIndex = -1; }, 200));
         omnibox.addEventListener('focus', () => {
             omnibox.select();
             if (window.innerWidth < 800) {
@@ -376,42 +375,11 @@ export class UIManager {
             }
         });
 
-        window.addEventListener('resize', () => this._scheduleOmniboxOverlaySpaceUpdate());
-    }
-
-    _setOmniboxOverlaySpace(px) {
-        const chrome = document.querySelector('.browser-chrome');
-        if (!chrome) return;
-        const next = Math.max(0, Math.min(520, Math.round(Number(px) || 0)));
-        if (next === this._omniboxOverlaySpace) return;
-        this._omniboxOverlaySpace = next;
-        if (next === 0) chrome.style.removeProperty('--omnibox-overlay-space');
-        else chrome.style.setProperty('--omnibox-overlay-space', `${next}px`);
-    }
-
-    _scheduleOmniboxOverlaySpaceUpdate() {
-        if (this._omniboxOverlayRaf) cancelAnimationFrame(this._omniboxOverlayRaf);
-        this._omniboxOverlayRaf = requestAnimationFrame(() => {
-            this._omniboxOverlayRaf = null;
-            this._updateOmniboxOverlaySpace();
-        });
-    }
-
-    _updateOmniboxOverlaySpace() {
-        const { suggestionsList } = this.elements;
-        if (!suggestionsList || suggestionsList.classList.contains('hidden')) return this._setOmniboxOverlaySpace(0);
-        const chrome = document.querySelector('.browser-chrome');
-        if (!chrome) return;
-
-        const chromeRect = chrome.getBoundingClientRect();
-        const listRect = suggestionsList.getBoundingClientRect();
-        const extra = Math.max(0, listRect.bottom - chromeRect.bottom + 10);
-        this._setOmniboxOverlaySpace(extra);
     }
 
     renderSuggestions(list) {
         const { suggestionsList, omnibox } = this.elements;
-        if (!list || list.length === 0) { suggestionsList.classList.add('hidden'); this._setOmniboxOverlaySpace(0); return; }
+        if (!list || list.length === 0) { suggestionsList.classList.add('hidden'); return; }
         const frag = document.createDocumentFragment();
         list.slice(0, 8).forEach((raw) => {
             const s = typeof raw === 'string' ? { type: 'search', value: raw, label: raw } : raw;
@@ -433,7 +401,7 @@ export class UIManager {
         });
         suggestionsList.replaceChildren(frag);
         suggestionsList.classList.remove('hidden');
-        this._scheduleOmniboxOverlaySpaceUpdate();
+        suggestionsList.classList.remove('hidden');
     }
 
     highlightSuggestion(items) {

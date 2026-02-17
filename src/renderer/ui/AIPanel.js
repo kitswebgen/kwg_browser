@@ -92,10 +92,15 @@ export class AIPanel {
 
     fetchPageContext(tab) {
         return new Promise((resolve) => {
-            // Timeout in case webview doesn't respond
-            const timeout = setTimeout(() => resolve({ title: tab.webviewEl.getTitle(), url: tab.webviewEl.getURL() }), 2000);
+            let handler;
 
-            const handler = (e) => {
+            // Timeout in case webview doesn't respond
+            const timeout = setTimeout(() => {
+                tab.webviewEl.removeEventListener('ipc-message', handler);
+                resolve({ title: tab.webviewEl.getTitle(), url: tab.webviewEl.getURL() });
+            }, 2000);
+
+            handler = (e) => {
                 if (e.channel === 'page-content-result') {
                     clearTimeout(timeout);
                     tab.webviewEl.removeEventListener('ipc-message', handler);
@@ -107,6 +112,8 @@ export class AIPanel {
             try {
                 tab.webviewEl.send('get-page-content');
             } catch (e) {
+                clearTimeout(timeout);
+                tab.webviewEl.removeEventListener('ipc-message', handler);
                 resolve(null);
             }
         });
@@ -133,5 +140,9 @@ export class AIPanel {
 
     scrollToBottom() {
         this.messages.scrollTop = this.messages.scrollHeight;
+    }
+    handlePageContent(data) {
+        // Optional: Could proactively update context in a real implementation
+        console.log('[AI] Page context updated');
     }
 }
