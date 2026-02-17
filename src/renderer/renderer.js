@@ -22,9 +22,12 @@ const PM = new ProfileManager({
 
 const UI = new UIManager(null, PM);
 
+// Define AI first to be available for TM callback
+let AI;
+
 const TM = new TabManager(tabsContainer, webviewContainer, {
     onUpdateUI: () => UI.updateUI(),
-    onPageContentUpdate: (data) => AI.handlePageContent(data),
+    onPageContentUpdate: (data) => AI && AI.handlePageContent(data),
     onTabCountUpdate: (count) => {
         const countEl = document.getElementById('tab-count');
         if (countEl) countEl.textContent = count;
@@ -87,7 +90,9 @@ const TM = new TabManager(tabsContainer, webviewContainer, {
     onZoomUpdate: (level) => UI.showZoomIndicator(level)
 });
 
-const AI = new AIPanel(TM);
+AI = new AIPanel(TM);
+const GM = new GoogleAppsManager(TM, UI);
+
 // Link UI with TM
 UI.TM = TM;
 
@@ -697,6 +702,13 @@ if (window.electronAPI) {
         UI.showNotification(data.message, 3000);
         if (data.type === 'suspend') TM._saveSession({ immediate: true });
     });
+
+    if (window.electronAPI.onNetworkSpeed) {
+        window.electronAPI.onNetworkSpeed((stats) => {
+            const el = document.getElementById('network-speed');
+            if (el) el.textContent = `⬇️ ${stats.download} | ⬆️ ${stats.upload}`;
+        });
+    }
 }
 
 // Init

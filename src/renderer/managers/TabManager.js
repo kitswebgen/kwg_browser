@@ -179,14 +179,10 @@ export class TabManager {
 
         tab.webviewEl.addEventListener('update-target-url', (e) => {
             if (this.activeTabId === tab.id) {
-                const sb = document.getElementById('status-bar');
-                if (sb) {
-                    if (e.url) {
-                        sb.textContent = e.url;
-                        sb.classList.add('visible');
-                    } else {
-                        sb.classList.remove('visible');
-                    }
+                const sbText = document.getElementById('status-text');
+                if (sbText) {
+                    sbText.textContent = e.url || 'Ready';
+                    sbText.setAttribute('title', e.url || 'Ready');
                 }
             }
         });

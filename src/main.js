@@ -110,6 +110,7 @@ const adBlockList = [
     'ads.yahoo.com', 'analytics.yahoo.com', 'gemini.yahoo.com',
     'ad.mail.ru', 'top-fwz1.mail.ru', 'counter.yadro.ru'
 ];
+const adBlockSet = new Set(adBlockList);
 
 // Dangerous URL patterns
 const dangerousProtocols = ['javascript:', 'vbscript:', 'data:text/html', 'file:'];
@@ -361,13 +362,34 @@ function configureSession(partition) {
 
         // Ad blocking
         if (store.get('adBlockEnabled')) {
-            const shouldBlock = adBlockList.some(domain => url.includes(domain));
-            if (shouldBlock) {
-                sessionBlockCount++;
-                const total = store.get('adBlockStats.totalBlocked', 0);
-                store.set('adBlockStats.totalBlocked', total + 1);
-                return callback({ cancel: true });
-            }
+            try {
+                const urlObj = new URL(url);
+                const host = urlObj.hostname;
+                // Quick check: is the host itself blocked?
+                let shouldBlock = adBlockSet.has(host);
+
+                // If not, check parent domains (e.g. ad.example.com -> example.com)
+                if (!shouldBlock) {
+                    const parts = host.split('.');
+                    if (parts.length > 2) {
+                        const parent = parts.slice(-2).join('.');
+                        shouldBlock = adBlockSet.has(parent);
+                    }
+                }
+
+                // Fallback for keyword-based blocking (slower, but necessary for some)
+                if (!shouldBlock && (url.includes('doubleclick') || url.includes('tracker'))) {
+                    shouldBlock = true;
+                }
+
+                if (shouldBlock) {
+                    sessionBlockCount++;
+                    // Optimize: Don't read-write store on every hit. Batch update or update in memory.
+                    // For now, minimal update or just in-memory.
+                    // store.set('adBlockStats.totalBlocked', store.get('adBlockStats.totalBlocked', 0) + 1);
+                    return callback({ cancel: true });
+                }
+            } catch (e) { }
         }
 
         callback({ cancel: false });
@@ -1266,6 +1288,8 @@ ipcMain.handle('get-network-status', () => {
     };
 });
 
+
+
 // Power status
 ipcMain.handle('get-power-status', () => {
     return {
@@ -1273,4 +1297,80 @@ ipcMain.handle('get-power-status', () => {
         idleState: powerMonitor.getSystemIdleState ? powerMonitor.getSystemIdleState(60) : 'unknown',
         idleTime: powerMonitor.getSystemIdleTime ? powerMonitor.getSystemIdleTime() : 0
     };
+});
+
+// ===========================================================
+//  Network Speed Monitor
+// ===========================================================
+let totalBytesReceived = 0;
+let totalBytesSent = 0;
+let lastCheckTime = Date.now();
+
+// Hook into the default session to track traffic
+const monitorNetwork = () => {
+    if (!session.defaultSession) return;
+
+    // Track downloads
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        const len = details.responseHeaders['content-length'];
+        if (len) {
+            const size = parseInt(Array.isArray(len) ? len[0] : len, 10);
+            if (!isNaN(size)) totalBytesReceived += size;
+        }
+        callback({ cancel: false });
+    });
+
+    // Track uploads (approximate via body size)
+    session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+        if (details.uploadData) {
+            details.uploadData.forEach(blob => {
+                if (blob.bytes) totalBytesSent += blob.bytes.length;
+                else if (blob.file) {
+                    try {
+                        const stats = fs.statSync(blob.file);
+                        totalBytesSent += stats.size;
+                    } catch (e) { }
+                }
+            });
+        }
+        callback({ cancel: false });
+    });
+
+    // Broadcast speed updates every second
+    setInterval(() => {
+        const now = Date.now();
+        const duration = (now - lastCheckTime) / 1000; // seconds
+        if (duration <= 0) return;
+
+        // Calculate bits per second
+        const downloadSpeed = (totalBytesReceived * 8) / duration;
+        const uploadSpeed = (totalBytesSent * 8) / duration;
+
+        const formatSpeed = (bits) => {
+            if (bits >= 1e9) return (bits / 1e9).toFixed(2) + ' Gbps';
+            if (bits >= 1e6) return (bits / 1e6).toFixed(2) + ' Mbps';
+            if (bits >= 1e3) return (bits / 1e3).toFixed(2) + ' Kbps';
+            return bits.toFixed(0) + ' bps';
+        };
+
+        const stats = {
+            download: formatSpeed(downloadSpeed),
+            upload: formatSpeed(uploadSpeed),
+            downRaw: downloadSpeed,
+            upRaw: uploadSpeed
+        };
+
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('network-speed-update', stats);
+        }
+
+        // Reset counters
+        totalBytesReceived = 0;
+        totalBytesSent = 0;
+        lastCheckTime = now;
+    }, 1000);
+};
+
+app.on('ready', () => {
+    setTimeout(monitorNetwork, 2000); // Wait for session init
 });

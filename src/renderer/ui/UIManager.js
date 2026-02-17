@@ -313,23 +313,43 @@ export class UIManager {
     setupOmnibox() {
         const { omnibox, suggestionsList } = this.elements;
 
+        let lastQuery = '';
+        let cachedRemote = [];
+
         omnibox.addEventListener('input', () => {
             clearTimeout(this.suggestionDebounce);
             this.selectedSuggestionIndex = -1;
             const query = omnibox.value.trim();
-            if (query.length < 2) { suggestionsList.classList.add('hidden'); return; }
+            if (query.length < 2) {
+                suggestionsList.classList.add('hidden');
+                lastQuery = '';
+                cachedRemote = [];
+                return;
+            }
 
             this.suggestionDebounce = setTimeout(async () => {
+                // Optimization: Don't re-fetch if query matches previous prefix and we have enough data?
+                // Actually simple debounce is usually enough. But let's verify async order.
+                const currentQuery = omnibox.value.trim();
+                if (currentQuery !== query) return; // Stale
+
                 try {
                     const local = this.getLocalUrlSuggestions(query);
                     let remote = [];
+
+                    // Use cache if just typing more characters? (Simple implementation: just fetch)
                     if (window.electronAPI?.getSearchSuggestions) {
                         remote = await window.electronAPI.getSearchSuggestions(query, this.currentSearchEngine);
                     } else {
+                        // Fallback fetches
                         const res = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}`);
                         const data = await res.json();
                         remote = data?.[1] || [];
                     }
+
+                    // Verify again after await
+                    if (omnibox.value.trim() !== query) return;
+
                     const remoteItems = (Array.isArray(remote) ? remote : [])
                         .filter(s => typeof s === 'string')
                         .map(s => ({ type: 'search', value: s, label: s }));
@@ -344,7 +364,7 @@ export class UIManager {
 
                     this.renderSuggestions(combined);
                 } catch (e) { suggestionsList.classList.add('hidden'); }
-            }, 200);
+            }, 150); // Slightly faster debounce
         });
 
         omnibox.addEventListener('keydown', (e) => {

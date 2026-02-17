@@ -27,13 +27,16 @@ function attemptSkipAds() {
 }
 
 // Use MutationObserver for performance instead of setInterval
+// Use MutationObserver for performance instead of setInterval
+let timeout = null;
 const observer = new MutationObserver((mutations) => {
-    for (const m of mutations) {
-        if (m.type === 'childList' || m.type === 'attributes') {
-            attemptSkipAds();
-            // Debounce if needed, but skip checks are fast
-        }
-    }
+    // Debounce to prevent rapid firing on every DOM change
+    if (timeout) return;
+
+    timeout = setTimeout(() => {
+        timeout = null;
+        attemptSkipAds();
+    }, 100);
 });
 
 // Start observing
