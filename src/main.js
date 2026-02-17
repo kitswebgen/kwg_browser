@@ -495,14 +495,11 @@ function installGlobalSecurityHooks() {
 
 function createSplashWindow() {
     splashWindow = new BrowserWindow({
-        width: 420,
-        height: 340,
+        fullscreen: true,
         frame: false,
         transparent: true,
-        resizable: false,
         alwaysOnTop: true,
         skipTaskbar: true,
-        center: true,
         webPreferences: { nodeIntegration: false, contextIsolation: true }
     });
     splashWindow.loadFile(path.join(__dirname, 'renderer/splash.html'));
