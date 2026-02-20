@@ -77,6 +77,15 @@ ipcRenderer.on('get-page-content', () => {
 });
 
 // Auto-notify host on significant changes (optional, maybe too noisy)
-// document.addEventListener('DOMContentLoaded', () => {
-//     ipcRenderer.sendToHost('page-loaded', getPageMetadata());
-// });
+// =========================================================
+//  SEARCH INTERFACE (for NTP)
+// =========================================================
+if (window.location.protocol === 'file:') {
+    try {
+        window.kitsAPI = {
+            performSearch: (query) => {
+                ipcRenderer.sendToHost('perform-search', { query });
+            }
+        };
+    } catch (e) { }
+}

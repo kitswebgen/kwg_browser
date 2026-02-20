@@ -21,7 +21,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onNewTab: (callback) => ipcRenderer.on('new-tab-from-main', (e, url) => callback(url)),
     onDownloadStatus: (callback) => ipcRenderer.on('download-status', (e, data) => callback(data)),
     onSecurityWarning: (callback) => ipcRenderer.on('security-warning', (e, data) => callback(data)),
+    onSecurityWarning: (callback) => ipcRenderer.on('security-warning', (e, data) => callback(data)),
     onMenuAction: (callback) => ipcRenderer.on('menu-action', (e, action) => callback(action)),
+    onPerformSearch: (callback) => ipcRenderer.on('perform-search', (e, query) => callback(query)),
     onPowerEvent: (callback) => ipcRenderer.on('power-event', (e, data) => callback(data)),
 
     // Persistent Store

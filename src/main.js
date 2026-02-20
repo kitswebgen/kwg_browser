@@ -15,8 +15,26 @@ const Store = require('electron-store');
 const log = require('electron-log/main');
 const { v4: uuidv4 } = require('uuid');
 const sanitizeHtml = require('sanitize-html');
-const contextMenu = require('electron-context-menu');
 const cron = require('node-cron');
+const contextMenu = require('electron-context-menu');
+
+// Initialize Context Menu
+contextMenu({
+    showSearchWithGoogle: false,
+    showCopyImage: true,
+    showSaveImageAs: true,
+    showInspectElement: true,
+    append: (defaultActions, parameters, browserWindow) => [
+        {
+            label: 'Search with ' + (store.get('searchEngine') || 'Google').toUpperCase(),
+            visible: parameters.selectionText.trim().length > 0,
+            click: () => {
+                const query = parameters.selectionText;
+                browserWindow.webContents.send('perform-search', query);
+            }
+        }
+    ]
+});
 
 // ===========================================================
 //  1. LOGGING SYSTEM
@@ -1081,212 +1099,19 @@ ipcMain.on('menu-action', (e, action) => {
 // ===========================================================
 //  16. SYSTEM SECURITY INTEGRATION
 // ===========================================================
-ipcMain.handle('get-system-security', async () => {
-    const cpus = os.cpus();
-    const totalMem = os.totalmem();
-    const freeMem = os.freemem();
-    const usedMem = totalMem - freeMem;
-    const memUsagePercent = Math.round((usedMem / totalMem) * 100);
-    const networkInterfaces = os.networkInterfaces();
-
-    // Calculate disk space (cross-platform)
-    let diskInfo = { total: 'N/A', free: 'N/A', usedPercent: 0 };
-    try {
-        if (process.platform === 'win32') {
-            const { execSync } = require('child_process');
-            const result = execSync('wmic logicaldisk get size,freespace,caption', { encoding: 'utf-8' });
-            const lines = result.trim().split('\n').slice(1).filter(l => l.trim());
-            let totalDisk = 0, freeDisk = 0;
-            lines.forEach(line => {
-                const parts = line.trim().split(/\s+/);
-                if (parts.length >= 3) {
-                    freeDisk += parseInt(parts[1]) || 0;
-                    totalDisk += parseInt(parts[2]) || 0;
-                }
-            });
-            diskInfo = {
-                total: `${Math.round(totalDisk / (1024 ** 3))} GB`,
-                free: `${Math.round(freeDisk / (1024 ** 3))} GB`,
-                usedPercent: totalDisk > 0 ? Math.round(((totalDisk - freeDisk) / totalDisk) * 100) : 0
-            };
-        } else {
-            const { execSync } = require('child_process');
-            const result = execSync("df -k / | tail -1", { encoding: 'utf-8' });
-            const parts = result.trim().split(/\s+/);
-            const totalBlocks = parseInt(parts[1]) || 0;
-            const usedBlocks = parseInt(parts[2]) || 0;
-            diskInfo = {
-                total: `${Math.round((totalBlocks * 1024) / (1024 ** 3))} GB`,
-                free: `${Math.round(((totalBlocks - usedBlocks) * 1024) / (1024 ** 3))} GB`,
-                usedPercent: totalBlocks > 0 ? Math.round((usedBlocks / totalBlocks) * 100) : 0
-            };
-        }
-    } catch (e) { log.warn('[Disk] Could not get disk info:', e.message); }
-
-    // Network interfaces
-    const interfaces = [];
-    for (const [name, addrs] of Object.entries(networkInterfaces)) {
-        const ipv4 = addrs.find(a => a.family === 'IPv4' && !a.internal);
-        if (ipv4) interfaces.push({ name, address: ipv4.address, mac: ipv4.mac, netmask: ipv4.netmask });
-    }
-
-    // GPU info
-    let gpuInfo = 'Unknown';
-    try {
-        const gpuData = await app.getGPUInfo('basic');
-        if (gpuData?.gpuDevice?.[0]) {
-            const gpu = gpuData.gpuDevice[0];
-            gpuInfo = gpu.description || `Vendor: ${gpu.vendorId}, Device: ${gpu.deviceId}`;
-        }
-    } catch (e) { log.warn('[GPU]', e.message); }
-
-    // Security posture
-    const securityChecks = {
-        httpsUpgrade: store.get('httpsUpgrade', true),
-        adBlocker: store.get('adBlockEnabled', true),
-        doNotTrack: store.get('privacySettings.doNotTrack', true),
-        fingerprintProtection: store.get('privacySettings.fingerprintProtection', true),
-        thirdPartyCookiesBlocked: store.get('privacySettings.blockThirdPartyCookies', true),
-        sandboxEnabled: true,
-        contextIsolation: true,
-        secureEncryption: true,
-        safeBrowsing: true,
-        pbkdf2Auth: true
-    };
-    const securityScore = Object.values(securityChecks).filter(Boolean).length;
-    const maxScore = Object.keys(securityChecks).length;
-
-    // Screen info
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const allDisplays = screen.getAllDisplays();
-
-    return {
-        // Platform
-        platform: process.platform,
-        platformName: os.type(),
-        platformVersion: os.release(),
-        arch: process.arch,
-        hostname: os.hostname(),
-        username: os.userInfo().username,
-        homeDir: os.homedir(),
-        tempDir: os.tmpdir(),
-        shell: os.userInfo().shell || (process.platform === 'win32' ? 'PowerShell' : '/bin/bash'),
-
-        // CPU
-        cpuModel: cpus[0]?.model || 'Unknown',
-        cpuCores: cpus.length,
-        cpuSpeed: `${cpus[0]?.speed || 0} MHz`,
-        cpuArch: os.arch(),
-
-        // Memory
-        totalMemory: `${(totalMem / (1024 ** 3)).toFixed(1)} GB`,
-        freeMemory: `${(freeMem / (1024 ** 3)).toFixed(1)} GB`,
-        usedMemory: `${(usedMem / (1024 ** 3)).toFixed(1)} GB`,
-        memUsagePercent,
-
-        // Disk
-        diskTotal: diskInfo.total,
-        diskFree: diskInfo.free,
-        diskUsedPercent: diskInfo.usedPercent,
-
-        // Network
-        networkInterfaces: interfaces,
-        isOnline: net.isOnline(),
-
-        // GPU
-        gpuInfo,
-
-        // Display
-        displayCount: allDisplays.length,
-        primaryResolution: `${primaryDisplay.size.width}x${primaryDisplay.size.height}`,
-        scaleFactor: primaryDisplay.scaleFactor,
-        colorDepth: primaryDisplay.colorDepth,
-        refreshRate: primaryDisplay.displayFrequency || 'Unknown',
-        touchSupport: primaryDisplay.touchSupport || 'Unknown',
-
-        // Security
-        securityChecks,
-        securityScore,
-        maxSecurityScore: maxScore,
-        securityGrade: securityScore >= 9 ? 'A+' : securityScore >= 7 ? 'A' : securityScore >= 5 ? 'B' : 'C',
-
-        // Browser
-        browserVersion: app.getVersion(),
-        electronVersion: process.versions.electron,
-        chromeVersion: process.versions.chrome,
-        nodeVersion: process.versions.node,
-        v8Version: process.versions.v8,
-        uptime: `${Math.round(os.uptime() / 3600)}h ${Math.round((os.uptime() % 3600) / 60)}m`,
-        processUptime: `${Math.round(process.uptime() / 60)}m`,
-        pid: process.pid,
-        configPath: store.path
-    };
-});
+// ===========================================================
+//  16. SYSTEM SECURITY INTEGRATION
+// ===========================================================
+ipcMain.handle('get-system-security', () => getSystemSecurity(store));
 
 // Device compatibility info
-ipcMain.handle('get-device-info', () => {
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const allDisplays = screen.getAllDisplays();
-    return {
-        displays: allDisplays.map(d => ({
-            id: d.id,
-            label: d.label || `Display ${d.id}`,
-            resolution: `${d.size.width}x${d.size.height}`,
-            workArea: `${d.workArea.width}x${d.workArea.height}`,
-            scaleFactor: d.scaleFactor,
-            rotation: d.rotation,
-            colorDepth: d.colorDepth,
-            refreshRate: d.displayFrequency || 'N/A',
-            internal: d.internal || false,
-            touchSupport: d.touchSupport || 'unknown',
-            bounds: d.bounds
-        })),
-        primary: {
-            resolution: `${primaryDisplay.size.width}x${primaryDisplay.size.height}`,
-            scaleFactor: primaryDisplay.scaleFactor,
-            dpi: Math.round(primaryDisplay.scaleFactor * 96),
-            isHiDPI: primaryDisplay.scaleFactor > 1,
-            colorDepth: primaryDisplay.colorDepth
-        },
-        platform: process.platform,
-        platformName: process.platform === 'win32' ? 'Windows' : process.platform === 'darwin' ? 'macOS' : 'Linux',
-        arch: process.arch,
-        isARM: process.arch.includes('arm'),
-        is64bit: process.arch.includes('64'),
-        locale: app.getLocale(),
-        systemLocale: app.getSystemLocale ? app.getSystemLocale() : app.getLocale()
-    };
-});
+ipcMain.handle('get-device-info', () => getDeviceInfo());
 
 // Native system notification
-ipcMain.handle('send-notification', (e, { title, body, urgency }) => {
-    if (!Notification.isSupported()) return { success: false, reason: 'Notifications not supported' };
-    const notification = new Notification({
-        title: title || 'KITSWebGen',
-        body: body || '',
-        icon: path.join(__dirname, 'renderer/icon.png'),
-        urgency: urgency || 'normal'
-    });
-    notification.show();
-    notification.on('click', () => { mainWindow?.show(); mainWindow?.focus(); });
-    return { success: true };
-});
+ipcMain.handle('send-notification', (e, opts) => sendNotification(mainWindow, opts));
 
 // Network status
-ipcMain.handle('get-network-status', () => {
-    const interfaces = os.networkInterfaces();
-    const activeInterfaces = [];
-    for (const [name, addrs] of Object.entries(interfaces)) {
-        const ipv4 = addrs.find(a => a.family === 'IPv4' && !a.internal);
-        if (ipv4) activeInterfaces.push({ name, ip: ipv4.address, mac: ipv4.mac });
-    }
-    return {
-        online: net.isOnline(),
-        interfaces: activeInterfaces,
-        dns: os.networkInterfaces(),
-        hostname: os.hostname()
-    };
-});
+ipcMain.handle('get-network-status', () => getNetworkStatus());
 
 
 
@@ -1302,75 +1127,11 @@ ipcMain.handle('get-power-status', () => {
 // ===========================================================
 //  Network Speed Monitor
 // ===========================================================
-let totalBytesReceived = 0;
-let totalBytesSent = 0;
-let lastCheckTime = Date.now();
 
-// Hook into the default session to track traffic
-const monitorNetwork = () => {
-    if (!session.defaultSession) return;
-
-    // Track downloads
-    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-        const len = details.responseHeaders['content-length'];
-        if (len) {
-            const size = parseInt(Array.isArray(len) ? len[0] : len, 10);
-            if (!isNaN(size)) totalBytesReceived += size;
-        }
-        callback({ cancel: false });
-    });
-
-    // Track uploads (approximate via body size)
-    session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
-        if (details.uploadData) {
-            details.uploadData.forEach(blob => {
-                if (blob.bytes) totalBytesSent += blob.bytes.length;
-                else if (blob.file) {
-                    try {
-                        const stats = fs.statSync(blob.file);
-                        totalBytesSent += stats.size;
-                    } catch (e) { }
-                }
-            });
-        }
-        callback({ cancel: false });
-    });
-
-    // Broadcast speed updates every second
-    setInterval(() => {
-        const now = Date.now();
-        const duration = (now - lastCheckTime) / 1000; // seconds
-        if (duration <= 0) return;
-
-        // Calculate bits per second
-        const downloadSpeed = (totalBytesReceived * 8) / duration;
-        const uploadSpeed = (totalBytesSent * 8) / duration;
-
-        const formatSpeed = (bits) => {
-            if (bits >= 1e9) return (bits / 1e9).toFixed(2) + ' Gbps';
-            if (bits >= 1e6) return (bits / 1e6).toFixed(2) + ' Mbps';
-            if (bits >= 1e3) return (bits / 1e3).toFixed(2) + ' Kbps';
-            return bits.toFixed(0) + ' bps';
-        };
-
-        const stats = {
-            download: formatSpeed(downloadSpeed),
-            upload: formatSpeed(uploadSpeed),
-            downRaw: downloadSpeed,
-            upRaw: uploadSpeed
-        };
-
-        if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send('network-speed-update', stats);
-        }
-
-        // Reset counters
-        totalBytesReceived = 0;
-        totalBytesSent = 0;
-        lastCheckTime = now;
-    }, 1000);
-};
+const { getSystemSecurity, getDeviceInfo, sendNotification, getNetworkStatus } = require('./main/security-info');
+const { monitorNetwork } = require('./main/network-monitor');
 
 app.on('ready', () => {
-    setTimeout(monitorNetwork, 2000); // Wait for session init
+    setTimeout(() => monitorNetwork(mainWindow), 2000); // Wait for session init
 });
+

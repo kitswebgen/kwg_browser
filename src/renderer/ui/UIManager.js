@@ -37,6 +37,9 @@ export class UIManager {
             zoomIndicator: document.getElementById('zoom-indicator'),
             zoomLevelEl: document.getElementById('zoom-level'),
             engineSelect: document.getElementById('engine-select'),
+            headerEngineBtn: document.getElementById('header-engine-btn'),
+            headerEngineIcon: document.getElementById('header-engine-icon'),
+            headerEngineDropdown: document.getElementById('header-engine-dropdown'),
             themeSelect: document.getElementById('theme-select'),
             adblockToggle: document.getElementById('adblock-toggle')
         };
@@ -45,7 +48,13 @@ export class UIManager {
             google: 'https://www.google.com/search?q=',
             bing: 'https://www.bing.com/search?q=',
             duckduckgo: 'https://duckduckgo.com/?q=',
-            brave: 'https://search.brave.com/search?q='
+            brave: 'https://search.brave.com/search?q=',
+            perplexity: 'https://www.perplexity.ai/search?q=',
+            chatgpt: 'https://chatgpt.com/?q=',
+            claude: 'https://claude.ai/new?q=',
+            gemini: 'https://gemini.google.com/app',
+            copilot: 'https://www.bing.com/search?showconv=1&q=',
+            deepseek: 'https://chat.deepseek.com/'
         };
         this.currentSearchEngine = localStorage.getItem('searchEngine') || 'google';
         this.showBookmarksBar = localStorage.getItem('showBookmarksBar') !== 'false';
@@ -59,11 +68,13 @@ export class UIManager {
         this.setupCommandPalette();
         this.setupFindBar();
         this.setupSettings();
+        this.setupSearchEngineSwitcher();
         this.setupDownloads();
         this.setupOverlayGuards();
 
         // Restore search engine selection
         if (this.elements.engineSelect) this.elements.engineSelect.value = this.currentSearchEngine;
+        this.updateSearchEngineIcon();
         if (this.elements.themeSelect) this.elements.themeSelect.value = this.theme;
         this.applyTheme(this.theme);
 
@@ -144,6 +155,7 @@ export class UIManager {
             try { localStorage.setItem('showBookmarksBar', String(this.showBookmarksBar)); } catch (_) { }
 
             if (this.elements.engineSelect) this.elements.engineSelect.value = this.currentSearchEngine;
+            this.updateSearchEngineIcon();
             if (this.elements.themeSelect) this.elements.themeSelect.value = this.theme;
             this.applyTheme(this.theme);
             this.renderBookmarksBar();
@@ -170,6 +182,7 @@ export class UIManager {
             try { localStorage.setItem('showBookmarksBar', String(this.showBookmarksBar)); } catch (_) { }
 
             if (this.elements.engineSelect) this.elements.engineSelect.value = this.currentSearchEngine;
+            this.updateSearchEngineIcon();
             if (this.elements.themeSelect) this.elements.themeSelect.value = this.theme;
             this.applyTheme(this.theme);
 
@@ -232,8 +245,9 @@ export class UIManager {
 
             if (document.activeElement !== omnibox) {
                 omnibox.value = isInternal ? '' : url;
+                const engineName = this.currentSearchEngine.charAt(0).toUpperCase() + this.currentSearchEngine.slice(1);
                 omnibox.placeholder = isInternal
-                    ? `Search ${this.currentSearchEngine.charAt(0).toUpperCase() + this.currentSearchEngine.slice(1)} or type a URL...`
+                    ? `Search ${engineName} or type a URL (try !g, !gpt, !p)...`
                     : url;
             }
 
@@ -421,7 +435,135 @@ export class UIManager {
         });
         suggestionsList.replaceChildren(frag);
         suggestionsList.classList.remove('hidden');
-        suggestionsList.classList.remove('hidden');
+    }
+
+    navigateOmnibox() {
+        const { omnibox } = this.elements;
+        const active = this.TM.getActive();
+        if (!active || !omnibox) return;
+
+        let input = omnibox.value.trim();
+        if (!input) return;
+
+        // Check for search engine prefixes (bangs)
+        const prefixes = {
+            '!g': 'google', '!google': 'google',
+            '!b': 'bing', '!bing': 'bing',
+            '!d': 'duckduckgo', '!ddg': 'duckduckgo',
+            '!br': 'brave', '!brave': 'brave',
+            '!p': 'perplexity', '!perp': 'perplexity',
+            '!gpt': 'chatgpt', '!chatgpt': 'chatgpt',
+            '!c': 'claude', '!claude': 'claude',
+            '!gem': 'gemini', '!gemini': 'gemini',
+            '!ds': 'deepseek', '!deepseek': 'deepseek',
+            '!co': 'copilot', '!copilot': 'copilot'
+        };
+
+        let tempEngine = null;
+        for (const [prefix, engine] of Object.entries(prefixes)) {
+            if (input.startsWith(prefix + ' ')) {
+                tempEngine = engine;
+                input = input.substring(prefix.length + 1).trim();
+                break;
+            }
+        }
+
+        // Internal pages
+        if (input.endsWith('.html') && !input.includes('://') && !input.includes(' ')) {
+            active.webviewEl.loadURL(input);
+            return;
+        }
+
+        // URL detection
+        // Simple regex or heuristic
+        const hasProtocol = input.startsWith('http://') || input.startsWith('https://') || input.startsWith('file://');
+        const isLocalhost = input.startsWith('localhost') || input.includes('127.0.0.1');
+        // A simple "is domain" check: contains dot, no spaces, not starting with !
+        const looksLikeDomain = input.includes('.') && !input.includes(' ') && !input.startsWith('!');
+
+        if (hasProtocol || isLocalhost || looksLikeDomain) {
+            let url = input;
+            if (!hasProtocol) url = 'https://' + input;
+            active.webviewEl.loadURL(url);
+        } else {
+            // It's a search
+            const engineKey = tempEngine || this.currentSearchEngine;
+            const engineUrl = this.searchEngines[engineKey] || this.searchEngines.google;
+            let finalUrl = engineUrl + encodeURIComponent(input);
+
+            // Special handling for Gemini/DeepSeek if they don't support query params well
+            if (engineKey === 'gemini' || engineKey === 'deepseek') {
+                finalUrl = this.searchEngines[engineKey];
+                this.showNotification(`Loading ${engineKey}...`);
+
+                // Attach one-time injector
+                const onDomReady = () => {
+                    active.webviewEl.removeEventListener('dom-ready', onDomReady);
+                    this.injectAutoPrompt(active.webviewEl, engineKey, input);
+                };
+                active.webviewEl.addEventListener('dom-ready', onDomReady);
+            }
+
+            active.webviewEl.loadURL(finalUrl);
+        }
+
+        omnibox.blur();
+        this.elements.suggestionsList.classList.add('hidden');
+    }
+
+    injectAutoPrompt(webview, engine, prompt) {
+        if (!webview || !prompt) return;
+
+        const safePrompt = prompt.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+
+        let code = '';
+        if (engine === 'gemini') {
+            code = `
+            (function() {
+              const tryFill = () => {
+                const input = document.querySelector('div[contenteditable="true"][role="textbox"]') || document.querySelector('rich-textarea div[contenteditable]');
+                if (input) {
+                    input.focus();
+                    document.execCommand('insertText', false, "${safePrompt}");
+                    setTimeout(() => {
+                        const btn = document.querySelector('button[aria-label*="Send"]') || document.querySelector('.send-button');
+                        if (btn && !btn.disabled) btn.click();
+                    }, 800);
+                } else {
+                    setTimeout(tryFill, 500);
+                }
+              };
+              setTimeout(tryFill, 2000);
+            })();
+            `;
+        } else if (engine === 'deepseek') {
+            code = `
+            (function() {
+              const tryFill = () => {
+                const input = document.querySelector('textarea');
+                if (input) {
+                    input.focus();
+                    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+                    if (setter) { setter.call(input, "${safePrompt}"); }
+                    else { input.value = "${safePrompt}"; }
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    setTimeout(() => {
+                         const btn = document.querySelector('div[role="button"][aria-label="Send"]') || document.querySelector('#chat-input-send-button');
+                         if (btn) btn.click();
+                         else input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+                    }, 500);
+                } else {
+                    setTimeout(tryFill, 500);
+                }
+              };
+              setTimeout(tryFill, 1500);
+            })();
+            `;
+        }
+
+        if (code) {
+            try { webview.executeJavaScript(code); } catch (e) { console.error('Injection failed', e); }
+        }
     }
 
     highlightSuggestion(items) {
@@ -752,6 +894,81 @@ export class UIManager {
             active.readerCssKey = key;
             this.showNotification('📖 Reader Mode on');
         } catch (e) { this.showNotification('Reader Mode unavailable'); }
+    }
+    setupSearchEngineSwitcher() {
+        const { headerEngineBtn, headerEngineDropdown, engineSelect } = this.elements;
+        if (!headerEngineBtn || !headerEngineDropdown) return;
+
+        // Toggle dropdown
+        headerEngineBtn.onclick = (e) => {
+            e.stopPropagation();
+            headerEngineDropdown.classList.toggle('hidden');
+        };
+
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+            if (!headerEngineBtn.contains(e.target) && !headerEngineDropdown.contains(e.target)) {
+                headerEngineDropdown.classList.add('hidden');
+            }
+        });
+
+        // Handle selection
+        headerEngineDropdown.querySelectorAll('.engine-item').forEach(item => {
+            item.onclick = async () => {
+                const engine = item.dataset.value;
+                if (!engine) return;
+
+                this.currentSearchEngine = engine;
+                this.updateSearchEngineIcon();
+                headerEngineDropdown.classList.add('hidden');
+
+                // Sync with settings select
+                if (engineSelect) engineSelect.value = engine;
+
+                // Save
+                try {
+                    localStorage.setItem('searchEngine', engine);
+                    if (db?.supported?.()) await db.setKV('searchEngine', engine);
+                    if (window.electronAPI?.storeSet) window.electronAPI.storeSet('searchEngine', engine);
+                } catch (e) { console.error(e); }
+
+                this.showNotification(`Search engine changed to ${engine.charAt(0).toUpperCase() + engine.slice(1)}`);
+            };
+        });
+
+        // Sync settings select change back to header
+        if (engineSelect) {
+            engineSelect.addEventListener('change', async () => {
+                this.currentSearchEngine = engineSelect.value;
+                this.updateSearchEngineIcon();
+                // Save is handled in setupSettings usually, but let's ensure consistency
+                try {
+                    localStorage.setItem('searchEngine', this.currentSearchEngine);
+                    if (db?.supported?.()) await db.setKV('searchEngine', this.currentSearchEngine);
+                } catch (e) { }
+            });
+        }
+    }
+
+    updateSearchEngineIcon() {
+        const { headerEngineIcon } = this.elements;
+        if (!headerEngineIcon) return;
+
+        const domains = {
+            google: 'google.com',
+            bing: 'bing.com',
+            duckduckgo: 'duckduckgo.com',
+            brave: 'search.brave.com',
+            perplexity: 'perplexity.ai',
+            chatgpt: 'chatgpt.com',
+            claude: 'claude.ai',
+            gemini: 'gemini.google.com',
+            deepseek: 'chat.deepseek.com',
+            copilot: 'copilot.microsoft.com'
+        };
+
+        const domain = domains[this.currentSearchEngine] || 'google.com';
+        headerEngineIcon.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
     }
 
 

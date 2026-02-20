@@ -98,6 +98,20 @@ export class TabManager {
         });
 
         // Crash Recovery
+        if (this.callbacks.onCrash) {
+            tab.webviewEl.addEventListener('crashed', (e) => this.callbacks.onCrash(tab.id));
+        }
+
+        // IPC Messages from Webview
+        tab.webviewEl.addEventListener('ipc-message', (event) => {
+            if (event.channel === 'page-content-result' && this.callbacks.onPageContentUpdate) {
+                this.callbacks.onPageContentUpdate({ tabId: tab.id, ...event.args[0] });
+            }
+            if (event.channel === 'perform-search' && this.callbacks.onPerformSearch) {
+                const query = event.args[0]?.query || event.args[0];
+                this.callbacks.onPerformSearch(query);
+            }
+        });
         tab.webviewEl.addEventListener('crashed', () => {
             this.activeTabId === tab.id && this.callbacks.onNotification && this.callbacks.onNotification('⚠️ Tab crashed! Reloading...');
             tab.webviewEl.reload();
@@ -223,15 +237,22 @@ export class TabManager {
     }
 
     switchTab(id) {
+        if (this.activeTabId === id) return;
+
+        const prevTab = this.tabs.find(t => t.id === this.activeTabId);
+        if (prevTab) {
+            prevTab.tabEl.classList.remove('active');
+            prevTab.webviewEl.classList.remove('active');
+        }
+
         this.activeTabId = id;
-        this.tabs.forEach(t => {
-            const isActive = t.id === id;
-            t.tabEl.classList.toggle('active', isActive);
-            t.webviewEl.classList.toggle('active', isActive);
-            if (isActive) {
-                try { t.tabEl.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' }); } catch (_) { }
-            }
-        });
+        const nextTab = this.tabs.find(t => t.id === id);
+        if (nextTab) {
+            nextTab.tabEl.classList.add('active');
+            nextTab.webviewEl.classList.add('active');
+            try { nextTab.tabEl.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' }); } catch (_) { }
+        }
+
         if (this.callbacks.onUpdateUI) this.callbacks.onUpdateUI();
     }
 

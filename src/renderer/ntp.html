@@ -389,21 +389,12 @@
                 const query = input.value.trim();
                 if (!query) return;
 
-                const searchEngines = {
-                    google: 'https://www.google.com/search?q=',
-                    bing: 'https://www.bing.com/search?q=',
-                    duckduckgo: 'https://duckduckgo.com/?q=',
-                    brave: 'https://search.brave.com/search?q='
-                };
-
-                let url;
-                if (!query.includes(' ') && query.includes('.')) {
-                    url = query.startsWith('http') ? query : 'https://' + query;
+                if (window.kitsAPI && window.kitsAPI.performSearch) {
+                    window.kitsAPI.performSearch(query);
                 } else {
-                    const base = searchEngines[currentEngine] || searchEngines.google;
-                    url = base + encodeURIComponent(query);
+                    // Fallback to Google if API missing
+                    window.location.href = 'https://www.google.com/search?q=' + encodeURIComponent(query);
                 }
-                window.location.href = url;
             }
         });
 
