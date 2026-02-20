@@ -771,8 +771,14 @@ app.on('ready', () => {
         powerMonitor.on('lock-screen', () => log.info('[Power] Screen locked'));
         powerMonitor.on('unlock-screen', () => log.info('[Power] Screen unlocked'));
 
+        // ===========================================================
+        //  NETWORK MONITOR
+        // ===========================================================
+        setTimeout(() => monitorNetwork(mainWindow), 2000); // Wait for session init
+
     }, 2200);
 });
+
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
@@ -1099,9 +1105,9 @@ ipcMain.on('menu-action', (e, action) => {
 // ===========================================================
 //  16. SYSTEM SECURITY INTEGRATION
 // ===========================================================
-// ===========================================================
-//  16. SYSTEM SECURITY INTEGRATION
-// ===========================================================
+const { getSecurityInfo, getDeviceInfo, sendNotification, getNetworkStatus, getSystemSecurity } = require('./main/security-info');
+const { monitorNetwork } = require('./main/network-monitor');
+
 ipcMain.handle('get-system-security', () => getSystemSecurity(store));
 
 // Device compatibility info
@@ -1113,8 +1119,6 @@ ipcMain.handle('send-notification', (e, opts) => sendNotification(mainWindow, op
 // Network status
 ipcMain.handle('get-network-status', () => getNetworkStatus());
 
-
-
 // Power status
 ipcMain.handle('get-power-status', () => {
     return {
@@ -1124,14 +1128,4 @@ ipcMain.handle('get-power-status', () => {
     };
 });
 
-// ===========================================================
-//  Network Speed Monitor
-// ===========================================================
-
-const { getSystemSecurity, getDeviceInfo, sendNotification, getNetworkStatus } = require('./main/security-info');
-const { monitorNetwork } = require('./main/network-monitor');
-
-app.on('ready', () => {
-    setTimeout(() => monitorNetwork(mainWindow), 2000); // Wait for session init
-});
 

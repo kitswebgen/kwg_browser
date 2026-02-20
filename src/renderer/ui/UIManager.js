@@ -304,24 +304,85 @@ export class UIManager {
 
     navigateOmnibox() {
         const { omnibox, suggestionsList } = this.elements;
+        if (!omnibox) return;
         let input = omnibox.value.trim();
         if (!input) return;
+
         const active = this.TM.getActive();
         if (!active) return;
 
+        // 1. Internal kits:// handlers
         if (input === 'kits://history') { this.TM.createTab('history.html'); omnibox.blur(); return; }
         if (input === 'kits://bookmarks') { this.TM.createTab('bookmarks.html'); omnibox.blur(); return; }
         if (input === 'kits://downloads') { this.openDownloads(); omnibox.blur(); return; }
         if (input === 'kits://newtab') { this.TM.createTab('ntp.html'); omnibox.blur(); return; }
-        if (input === 'kits://settings') { document.getElementById('settings-modal').classList.remove('hidden'); omnibox.blur(); return; }
+        if (input === 'kits://settings') { document.getElementById('settings-modal')?.classList.remove('hidden'); omnibox.blur(); return; }
 
-        if (!input.startsWith('http://') && !input.startsWith('https://')) {
-            if (input.includes('.') && !input.includes(' ')) input = 'https://' + input;
-            else input = this.searchEngines[this.currentSearchEngine] + encodeURIComponent(input);
+        // 2. Search engine prefixes (bangs)
+        const prefixes = {
+            '!g': 'google', '!google': 'google',
+            '!b': 'bing', '!bing': 'bing',
+            '!d': 'duckduckgo', '!ddg': 'duckduckgo',
+            '!br': 'brave', '!brave': 'brave',
+            '!p': 'perplexity', '!perp': 'perplexity',
+            '!gpt': 'chatgpt', '!chatgpt': 'chatgpt',
+            '!c': 'claude', '!claude': 'claude',
+            '!gem': 'gemini', '!gemini': 'gemini',
+            '!ds': 'deepseek', '!deepseek': 'deepseek',
+            '!co': 'copilot', '!copilot': 'copilot'
+        };
+
+        let tempEngine = null;
+        for (const [prefix, engine] of Object.entries(prefixes)) {
+            if (input.startsWith(prefix + ' ')) {
+                tempEngine = engine;
+                input = input.substring(prefix.length + 1).trim();
+                break;
+            }
         }
-        active.webviewEl.loadURL(input);
+
+        // 3. HTML files (legacy/internal)
+        if (input.endsWith('.html') && !input.includes('://') && !input.includes(' ')) {
+            active.webviewEl.loadURL(input);
+            omnibox.blur();
+            suggestionsList.classList.add('hidden');
+            return;
+        }
+
+        // 4. URL detection
+        const hasProtocol = input.startsWith('http://') || input.startsWith('https://') || input.startsWith('file://');
+        const isLocalhost = input.startsWith('localhost') || input.includes('127.0.0.1');
+        const looksLikeDomain = input.includes('.') && !input.includes(' ') && !input.startsWith('!');
+
+        if (hasProtocol || isLocalhost || looksLikeDomain) {
+            let url = input;
+            if (!hasProtocol && !isLocalhost) url = 'https://' + input;
+            else if (isLocalhost && !hasProtocol) url = 'http://' + input;
+            active.webviewEl.loadURL(url);
+        } else {
+            // 5. It's a search
+            const engineKey = tempEngine || this.currentSearchEngine;
+            const engineUrl = this.searchEngines[engineKey] || this.searchEngines.google;
+            let finalUrl = engineUrl + encodeURIComponent(input);
+
+            // Special handling for Gemini/DeepSeek if they don't support query params well
+            if (engineKey === 'gemini' || engineKey === 'deepseek') {
+                finalUrl = this.searchEngines[engineKey];
+                this.showNotification(`Loading ${engineKey}...`);
+
+                // Attach one-time injector
+                const onDomReady = () => {
+                    active.webviewEl.removeEventListener('dom-ready', onDomReady);
+                    this.injectAutoPrompt(active.webviewEl, engineKey, input);
+                };
+                active.webviewEl.addEventListener('dom-ready', onDomReady);
+            }
+
+            active.webviewEl.loadURL(finalUrl);
+        }
+
         omnibox.blur();
-        this.elements.suggestionsList.classList.add('hidden');
+        suggestionsList.classList.add('hidden');
     }
 
     setupOmnibox() {
@@ -342,26 +403,21 @@ export class UIManager {
             }
 
             this.suggestionDebounce = setTimeout(async () => {
-                // Optimization: Don't re-fetch if query matches previous prefix and we have enough data?
-                // Actually simple debounce is usually enough. But let's verify async order.
                 const currentQuery = omnibox.value.trim();
-                if (currentQuery !== query) return; // Stale
+                if (currentQuery !== query) return;
 
                 try {
                     const local = this.getLocalUrlSuggestions(query);
                     let remote = [];
 
-                    // Use cache if just typing more characters? (Simple implementation: just fetch)
                     if (window.electronAPI?.getSearchSuggestions) {
                         remote = await window.electronAPI.getSearchSuggestions(query, this.currentSearchEngine);
                     } else {
-                        // Fallback fetches
                         const res = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}`);
                         const data = await res.json();
                         remote = data?.[1] || [];
                     }
 
-                    // Verify again after await
                     if (omnibox.value.trim() !== query) return;
 
                     const remoteItems = (Array.isArray(remote) ? remote : [])
@@ -378,7 +434,7 @@ export class UIManager {
 
                     this.renderSuggestions(combined);
                 } catch (e) { suggestionsList.classList.add('hidden'); }
-            }, 150); // Slightly faster debounce
+            }, 150);
         });
 
         omnibox.addEventListener('keydown', (e) => {
@@ -404,11 +460,7 @@ export class UIManager {
         omnibox.addEventListener('blur', () => setTimeout(() => { suggestionsList.classList.add('hidden'); this.selectedSuggestionIndex = -1; }, 200));
         omnibox.addEventListener('focus', () => {
             omnibox.select();
-            if (window.innerWidth < 800) {
-                // Maybe hide other elements or expand omnibox if needed, for now just ensure select
-            }
         });
-
     }
 
     renderSuggestions(list) {
@@ -437,79 +489,6 @@ export class UIManager {
         suggestionsList.classList.remove('hidden');
     }
 
-    navigateOmnibox() {
-        const { omnibox } = this.elements;
-        const active = this.TM.getActive();
-        if (!active || !omnibox) return;
-
-        let input = omnibox.value.trim();
-        if (!input) return;
-
-        // Check for search engine prefixes (bangs)
-        const prefixes = {
-            '!g': 'google', '!google': 'google',
-            '!b': 'bing', '!bing': 'bing',
-            '!d': 'duckduckgo', '!ddg': 'duckduckgo',
-            '!br': 'brave', '!brave': 'brave',
-            '!p': 'perplexity', '!perp': 'perplexity',
-            '!gpt': 'chatgpt', '!chatgpt': 'chatgpt',
-            '!c': 'claude', '!claude': 'claude',
-            '!gem': 'gemini', '!gemini': 'gemini',
-            '!ds': 'deepseek', '!deepseek': 'deepseek',
-            '!co': 'copilot', '!copilot': 'copilot'
-        };
-
-        let tempEngine = null;
-        for (const [prefix, engine] of Object.entries(prefixes)) {
-            if (input.startsWith(prefix + ' ')) {
-                tempEngine = engine;
-                input = input.substring(prefix.length + 1).trim();
-                break;
-            }
-        }
-
-        // Internal pages
-        if (input.endsWith('.html') && !input.includes('://') && !input.includes(' ')) {
-            active.webviewEl.loadURL(input);
-            return;
-        }
-
-        // URL detection
-        // Simple regex or heuristic
-        const hasProtocol = input.startsWith('http://') || input.startsWith('https://') || input.startsWith('file://');
-        const isLocalhost = input.startsWith('localhost') || input.includes('127.0.0.1');
-        // A simple "is domain" check: contains dot, no spaces, not starting with !
-        const looksLikeDomain = input.includes('.') && !input.includes(' ') && !input.startsWith('!');
-
-        if (hasProtocol || isLocalhost || looksLikeDomain) {
-            let url = input;
-            if (!hasProtocol) url = 'https://' + input;
-            active.webviewEl.loadURL(url);
-        } else {
-            // It's a search
-            const engineKey = tempEngine || this.currentSearchEngine;
-            const engineUrl = this.searchEngines[engineKey] || this.searchEngines.google;
-            let finalUrl = engineUrl + encodeURIComponent(input);
-
-            // Special handling for Gemini/DeepSeek if they don't support query params well
-            if (engineKey === 'gemini' || engineKey === 'deepseek') {
-                finalUrl = this.searchEngines[engineKey];
-                this.showNotification(`Loading ${engineKey}...`);
-
-                // Attach one-time injector
-                const onDomReady = () => {
-                    active.webviewEl.removeEventListener('dom-ready', onDomReady);
-                    this.injectAutoPrompt(active.webviewEl, engineKey, input);
-                };
-                active.webviewEl.addEventListener('dom-ready', onDomReady);
-            }
-
-            active.webviewEl.loadURL(finalUrl);
-        }
-
-        omnibox.blur();
-        this.elements.suggestionsList.classList.add('hidden');
-    }
 
     injectAutoPrompt(webview, engine, prompt) {
         if (!webview || !prompt) return;

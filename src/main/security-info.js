@@ -181,11 +181,11 @@ function getDeviceInfo() {
 
 function sendNotification(mainWindow, { title, body, urgency }) {
     if (!Notification.isSupported()) return { success: false, reason: 'Notifications not supported' };
-    
+
     // We need to resolve the icon path relative to correct directory
     // Assuming this file is in src/main/security-info.js, and icon is in src/renderer/icon.png
     const iconPath = path.join(__dirname, '../renderer/icon.png');
-    
+
     const notification = new Notification({
         title: title || 'KITSWebGen',
         body: body || '',
@@ -207,14 +207,14 @@ function getNetworkStatus() {
     return {
         online: net.isOnline(),
         interfaces: activeInterfaces,
-        dns: os.networkInterfaces(),
         hostname: os.hostname()
     };
 }
 
 module.exports = {
-    getSystemSecurity,
+    getSecurityInfo: getSystemSecurity,
     getDeviceInfo,
     sendNotification,
-    getNetworkStatus
+    getNetworkStatus,
+    getSystemSecurity
 };

@@ -21,7 +21,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onNewTab: (callback) => ipcRenderer.on('new-tab-from-main', (e, url) => callback(url)),
     onDownloadStatus: (callback) => ipcRenderer.on('download-status', (e, data) => callback(data)),
     onSecurityWarning: (callback) => ipcRenderer.on('security-warning', (e, data) => callback(data)),
-    onSecurityWarning: (callback) => ipcRenderer.on('security-warning', (e, data) => callback(data)),
     onMenuAction: (callback) => ipcRenderer.on('menu-action', (e, action) => callback(action)),
     onPerformSearch: (callback) => ipcRenderer.on('perform-search', (e, query) => callback(query)),
     onPowerEvent: (callback) => ipcRenderer.on('power-event', (e, data) => callback(data)),
@@ -67,8 +66,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getPowerStatus: () => ipcRenderer.invoke('get-power-status'),
 
     // Search suggestions (omnibox)
-    // Search suggestions (omnibox)
     getSearchSuggestions: (query, engine) => ipcRenderer.invoke('search-suggestions', query, engine),
 
     onNetworkSpeed: (callback) => ipcRenderer.on('network-speed-update', (e, stats) => callback(stats))
 });
+
+// For compatibility with older NTP versions if any
+contextBridge.exposeInMainWorld('kitsAPI', {
+    performSearch: (query) => ipcRenderer.send('perform-search-from-webview', query)
+});
+

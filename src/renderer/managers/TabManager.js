@@ -24,7 +24,7 @@ export class TabManager {
         if (isIncognito) webview.setAttribute('partition', 'incognito');
         webview.src = url;
         webview.setAttribute('allowpopups', '');
-        webview.setAttribute('preload', 'file:///' + window.location.pathname.replace('index.html', 'webview-preload.js').replace(/\\/g, '/'));
+        webview.setAttribute('preload', new URL('webview-preload.js', window.location.href).href);
         webview.setAttribute('webpreferences', 'contextIsolation=false, sandbox=true, nodeIntegration=false');
         webview.id = `webview-${id}`;
         webview.className = 'browser-webview';
@@ -104,21 +104,30 @@ export class TabManager {
 
         // IPC Messages from Webview
         tab.webviewEl.addEventListener('ipc-message', (event) => {
-            if (event.channel === 'page-content-result' && this.callbacks.onPageContentUpdate) {
-                this.callbacks.onPageContentUpdate({ tabId: tab.id, ...event.args[0] });
+            if (event.channel === 'page-content-result') {
+                const data = event.args[0];
+                tab.pageContent = data; // { content, meta }
+                if (this.callbacks.onPageContentUpdate) {
+                    this.callbacks.onPageContentUpdate({ tabId: tab.id, ...data });
+                }
             }
             if (event.channel === 'perform-search' && this.callbacks.onPerformSearch) {
                 const query = event.args[0]?.query || event.args[0];
                 this.callbacks.onPerformSearch(query);
             }
         });
+
         tab.webviewEl.addEventListener('crashed', () => {
-            this.activeTabId === tab.id && this.callbacks.onNotification && this.callbacks.onNotification('⚠️ Tab crashed! Reloading...');
+            if (this.activeTabId === tab.id && this.callbacks.onNotification) {
+                this.callbacks.onNotification('⚠️ Tab crashed! Reloading...');
+            }
             tab.webviewEl.reload();
         });
 
         tab.webviewEl.addEventListener('unresponsive', () => {
-            this.activeTabId === tab.id && this.callbacks.onNotification && this.callbacks.onNotification('⚠️ Tab unresponsive');
+            if (this.activeTabId === tab.id && this.callbacks.onNotification) {
+                this.callbacks.onNotification('⚠️ Tab unresponsive');
+            }
         });
 
         // Webview events
@@ -170,26 +179,13 @@ export class TabManager {
         tab.webviewEl.addEventListener('new-window', (e) => this.createTab(e.url));
 
         tab.webviewEl.addEventListener('did-fail-load', (e) => {
-            // -3 is aborted (usually by user), 0 is success in some contexts but here likely fail
             if (e.errorCode === -3 || e.errorCode === 0) return;
             try { if (tab.webviewEl.getURL()?.includes('error.html')) return; } catch (_) { }
-            // Using absolute path or relative? renderer.js uses relative 'error.html'
             tab.webviewEl.src = `error.html?desc=${encodeURIComponent(e.errorDescription || 'Unknown error')}&code=${e.errorCode}`;
         });
 
         tab.webviewEl.addEventListener('did-navigate', () => { if (this.activeTabId === tab.id && this.callbacks.onUpdateUI) this.callbacks.onUpdateUI(); });
         tab.webviewEl.addEventListener('did-navigate-in-page', () => { if (this.activeTabId === tab.id && this.callbacks.onUpdateUI) this.callbacks.onUpdateUI(); });
-
-        // IPC from Webview (Preload)
-        tab.webviewEl.addEventListener('ipc-message', (e) => {
-            if (e.channel === 'page-content-result') {
-                tab.pageContent = e.args[0]; // { content, meta }
-                // If this is the active tab, notify AI Panel if needed
-                if (this.activeTabId === tab.id && this.callbacks.onPageContentUpdate) {
-                    this.callbacks.onPageContentUpdate(tab.pageContent);
-                }
-            }
-        });
 
         tab.webviewEl.addEventListener('update-target-url', (e) => {
             if (this.activeTabId === tab.id) {

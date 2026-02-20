@@ -437,7 +437,6 @@ if (window.electronAPI) {
 }
 
 // Init
-// Init
 async function init() {
     try {
         await db.open();
