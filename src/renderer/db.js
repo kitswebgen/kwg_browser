@@ -31,6 +31,7 @@ function txComplete(tx) {
 }
 
 function safeParseJson(v, fallback) {
+    if (typeof v !== 'string') return v;
     try { return JSON.parse(v); } catch (_) { return fallback; }
 }
 
@@ -38,18 +39,22 @@ function normalizeBookmark(bm) {
     if (!bm || typeof bm !== 'object') return null;
     const url = typeof bm.url === 'string' ? bm.url.trim() : '';
     if (!url) return null;
-    const title = typeof bm.title === 'string' && bm.title.trim() ? bm.title.trim() : url;
-    const time = Number.isFinite(bm.time) ? bm.time : Date.now();
-    return { url, title, time };
+    return {
+        url,
+        title: typeof bm.title === 'string' && bm.title.trim() ? bm.title.trim() : url,
+        time: Number.isFinite(bm.time) ? bm.time : Date.now()
+    };
 }
 
 function normalizeHistoryItem(h) {
-    if (!h || typeof h !== 'object') return null;
+    if (!h || typeof h !== 'object') return h;
     const url = typeof h.url === 'string' ? h.url.trim() : '';
     if (!url) return null;
-    const title = typeof h.title === 'string' ? h.title.trim() : '';
-    const time = Number.isFinite(h.time) ? h.time : Date.now();
-    return { url, title, time };
+    return {
+        url,
+        title: typeof h.title === 'string' ? h.title.trim() : '',
+        time: Number.isFinite(h.time) ? h.time : Date.now()
+    };
 }
 
 class KitsDB {
@@ -60,37 +65,27 @@ class KitsDB {
         this._historyCleanupTimer = null;
     }
 
-    supported() { return this._supported; }
-
     async open() {
         if (!this._supported) return null;
         if (this._dbPromise) return this._dbPromise;
 
         this._dbPromise = new Promise((resolve, reject) => {
             const req = indexedDB.open(DB_NAME, DB_VERSION);
-
             req.onupgradeneeded = () => {
                 const db = req.result;
-                if (!db.objectStoreNames.contains('kv')) {
-                    db.createObjectStore('kv', { keyPath: 'key' });
-                }
+                if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv', { keyPath: 'key' });
                 if (!db.objectStoreNames.contains('bookmarks')) {
                     const store = db.createObjectStore('bookmarks', { keyPath: 'url' });
                     store.createIndex('by_time', 'time', { unique: false });
-                    store.createIndex('by_title', 'title', { unique: false });
                 }
                 if (!db.objectStoreNames.contains('history')) {
                     const store = db.createObjectStore('history', { keyPath: 'id', autoIncrement: true });
                     store.createIndex('by_time', 'time', { unique: false });
-                    store.createIndex('by_url', 'url', { unique: false });
-                    store.createIndex('by_title', 'title', { unique: false });
                 }
             };
-
             req.onsuccess = () => resolve(req.result);
             req.onerror = () => reject(req.error || new Error('Failed to open IndexedDB'));
         });
-
         return this._dbPromise;
     }
 
@@ -105,9 +100,7 @@ class KitsDB {
         try {
             const db = await this.open();
             const tx = db.transaction(['kv'], 'readonly');
-            const store = tx.objectStore('kv');
-            const rec = await requestToPromise(store.get(key));
-            await txComplete(tx);
+            const rec = await requestToPromise(tx.objectStore('kv').get(key));
             return rec ? rec.value : fallback;
         } catch (_) { return fallback; }
     }
@@ -118,7 +111,6 @@ class KitsDB {
             broadcast('kv-changed', { key });
             return true;
         }
-
         try {
             const db = await this.open();
             const tx = db.transaction(['kv'], 'readwrite');
@@ -150,10 +142,7 @@ class KitsDB {
         try {
             const db = await this.open();
             const tx = db.transaction([storeName], 'readonly');
-            const store = tx.objectStore(storeName);
-            const n = await requestToPromise(store.count());
-            await txComplete(tx);
-            return Number(n) || 0;
+            return await requestToPromise(tx.objectStore(storeName).count());
         } catch (_) { return 0; }
     }
 
@@ -163,40 +152,34 @@ class KitsDB {
             return Array.isArray(list) ? list.map(normalizeBookmark).filter(Boolean) : [];
         }
 
-        const db = await this.open();
-        return new Promise((resolve) => {
+        try {
+            const db = await this.open();
             const tx = db.transaction(['bookmarks'], 'readonly');
             const store = tx.objectStore('bookmarks').index('by_time');
-            const out = [];
-            const req = store.openCursor(null, 'prev');
-
-            req.onsuccess = (e) => {
-                const cursor = e.target.result;
-                if (!cursor || out.length >= limit) return resolve(out);
-                out.push(cursor.value);
-                cursor.continue();
-            };
-            req.onerror = () => resolve(out);
-        });
+            // Faster than cursor if we don't need incremental load
+            const results = await requestToPromise(store.getAll(null, limit));
+            return results.reverse(); // newest first
+        } catch (_) { return []; }
     }
 
     async setBookmarks(bookmarks = []) {
         const list = Array.isArray(bookmarks) ? bookmarks.map(normalizeBookmark).filter(Boolean) : [];
-
         if (!this._supported) {
             try { localStorage.setItem('bookmarks', JSON.stringify(list)); } catch (_) { }
             broadcast('bookmarks-changed');
             return list;
         }
 
-        const db = await this.open();
-        const tx = db.transaction(['bookmarks'], 'readwrite');
-        const store = tx.objectStore('bookmarks');
-        store.clear();
-        for (const bm of list) store.put(bm);
-        await txComplete(tx);
-        broadcast('bookmarks-changed');
-        return list;
+        try {
+            const db = await this.open();
+            const tx = db.transaction(['bookmarks'], 'readwrite');
+            const store = tx.objectStore('bookmarks');
+            store.clear();
+            for (const bm of list) store.put(bm);
+            await txComplete(tx);
+            broadcast('bookmarks-changed');
+            return list;
+        } catch (_) { return []; }
     }
 
     async upsertBookmark(bookmark) {
@@ -209,7 +192,7 @@ class KitsDB {
             const idx = next.findIndex(b => b.url === bm.url);
             if (idx >= 0) next[idx] = bm;
             else next.push(bm);
-            next.sort((a, b) => (b.time || 0) - (a.time || 0));
+            next.sort((a, b) => b.time - a.time);
             try { localStorage.setItem('bookmarks', JSON.stringify(next)); } catch (_) { }
             broadcast('bookmarks-changed');
             return true;
@@ -226,22 +209,18 @@ class KitsDB {
     }
 
     async removeBookmark(url) {
-        const u = typeof url === 'string' ? url.trim() : '';
-        if (!u) return false;
-
+        if (!url) return false;
         if (!this._supported) {
             const list = safeParseJson(localStorage.getItem('bookmarks') || '[]', []);
-            const next = Array.isArray(list) ? list.map(normalizeBookmark).filter(Boolean) : [];
-            const filtered = next.filter(b => b.url !== u);
+            const filtered = Array.isArray(list) ? list.filter(b => b.url !== url) : [];
             try { localStorage.setItem('bookmarks', JSON.stringify(filtered)); } catch (_) { }
             broadcast('bookmarks-changed');
             return true;
         }
-
         try {
             const db = await this.open();
             const tx = db.transaction(['bookmarks'], 'readwrite');
-            tx.objectStore('bookmarks').delete(u);
+            tx.objectStore('bookmarks').delete(url);
             await txComplete(tx);
             broadcast('bookmarks-changed');
             return true;
@@ -249,19 +228,15 @@ class KitsDB {
     }
 
     async isBookmarked(url) {
-        const u = typeof url === 'string' ? url.trim() : '';
-        if (!u) return false;
-
+        if (!url) return false;
         if (!this._supported) {
             const list = safeParseJson(localStorage.getItem('bookmarks') || '[]', []);
-            return Array.isArray(list) && list.some(b => b?.url === u);
+            return Array.isArray(list) && list.some(b => b?.url === url);
         }
-
         try {
             const db = await this.open();
             const tx = db.transaction(['bookmarks'], 'readonly');
-            const rec = await requestToPromise(tx.objectStore('bookmarks').get(u));
-            await txComplete(tx);
+            const rec = await requestToPromise(tx.objectStore('bookmarks').get(url));
             return !!rec;
         } catch (_) { return false; }
     }
@@ -270,16 +245,13 @@ class KitsDB {
         const h = normalizeHistoryItem(item);
         if (!h) return false;
 
-        // Cheap in-memory de-dupe.
-        if (this._lastHistory.url === h.url && (Date.now() - this._lastHistory.time) < 2_500) return true;
+        if (this._lastHistory.url === h.url && (Date.now() - this._lastHistory.time) < 2500) return true;
         this._lastHistory = { url: h.url, time: Date.now() };
 
         if (!this._supported) {
             const list = safeParseJson(localStorage.getItem('browsing-history') || '[]', []);
-            const next = Array.isArray(list) ? list.map(normalizeHistoryItem).filter(Boolean) : [];
-            next.push(h);
-            // Keep a reasonable size for legacy fallback.
-            const trimmed = next.slice(-Math.min(maxEntries, 2000));
+            list.push(h);
+            const trimmed = list.slice(-Math.min(maxEntries, 2000));
             try { localStorage.setItem('browsing-history', JSON.stringify(trimmed)); } catch (_) { }
             broadcast('history-changed');
             return true;
@@ -290,8 +262,6 @@ class KitsDB {
             const tx = db.transaction(['history'], 'readwrite');
             tx.objectStore('history').add(h);
             await txComplete(tx);
-
-            // Opportunistic cleanup.
             this._scheduleHistoryCleanup(maxEntries);
             broadcast('history-changed');
             return true;
@@ -299,12 +269,11 @@ class KitsDB {
     }
 
     _scheduleHistoryCleanup(maxEntries) {
-        if (!this._supported) return;
-        if (this._historyCleanupTimer) return;
+        if (!this._supported || this._historyCleanupTimer) return;
         this._historyCleanupTimer = setTimeout(() => {
             this._historyCleanupTimer = null;
             this.cleanupHistory({ maxEntries }).catch(() => { });
-        }, 2000);
+        }, 5000);
     }
 
     async cleanupHistory({ maxEntries = 20_000 } = {}) {
@@ -314,65 +283,57 @@ class KitsDB {
 
         const toDelete = total - maxEntries;
         const db = await this.open();
+        const tx = db.transaction(['history'], 'readwrite');
+        const store = tx.objectStore('history').index('by_time');
+        const oldest = await requestToPromise(store.getAllKeys(null, toDelete));
 
-        return new Promise((resolve) => {
-            let deleted = 0;
-            const tx = db.transaction(['history'], 'readwrite');
-            const store = tx.objectStore('history').index('by_time');
-            const req = store.openCursor(null, 'next'); // oldest first
-
-            req.onsuccess = (e) => {
-                const cursor = e.target.result;
-                if (!cursor || deleted >= toDelete) return resolve(true);
-                cursor.delete();
-                deleted++;
-                cursor.continue();
-            };
-            req.onerror = () => resolve(false);
-        });
+        const mainStore = tx.objectStore('history');
+        for (const key of oldest) mainStore.delete(key);
+        await txComplete(tx);
+        return true;
     }
 
     async getHistory({ query = '', limit = 1500 } = {}) {
         const q = String(query || '').toLowerCase().trim();
-
         if (!this._supported) {
             const list = safeParseJson(localStorage.getItem('browsing-history') || '[]', []);
-            const arr = Array.isArray(list) ? list.map(normalizeHistoryItem).filter(Boolean) : [];
-            const filtered = q ? arr.filter(h => String(h.title || '').toLowerCase().includes(q) || String(h.url || '').toLowerCase().includes(q)) : arr;
-            return filtered.slice(-limit).reverse().map((h, idx) => ({ id: idx + 1, ...h }));
-        }
-
-        const db = await this.open();
-        return new Promise((resolve) => {
-            const out = [];
-            const tx = db.transaction(['history'], 'readonly');
-            const index = tx.objectStore('history').index('by_time');
-            const req = index.openCursor(null, 'prev'); // newest first
-
-            req.onsuccess = (e) => {
-                const cursor = e.target.result;
-                if (!cursor || out.length >= limit) return resolve(out);
-                const v = cursor.value;
-                if (!q || String(v?.title || '').toLowerCase().includes(q) || String(v?.url || '').toLowerCase().includes(q)) out.push(v);
-                cursor.continue();
-            };
-            req.onerror = () => resolve(out);
-        });
-    }
-
-    async removeHistory(id) {
-        const n = Number(id);
-        if (!Number.isFinite(n)) return false;
-
-        if (!this._supported) {
-            // Legacy fallback cannot map stable IDs; no-op.
-            return false;
+            const filtered = q ? list.filter(h => String(h.title || '').toLowerCase().includes(q) || String(h.url || '').toLowerCase().includes(q)) : list;
+            return filtered.slice(-limit).reverse();
         }
 
         try {
             const db = await this.open();
+            const tx = db.transaction(['history'], 'readonly');
+            const index = tx.objectStore('history').index('by_time');
+
+            // If no query, use fast getAll
+            if (!q) {
+                const results = await requestToPromise(index.getAll(null, limit));
+                return results.reverse();
+            }
+
+            // If query, use cursor for efficient filtering (or getAll + filter if limit is small)
+            return new Promise((resolve) => {
+                const out = [];
+                const req = index.openCursor(null, 'prev');
+                req.onsuccess = (e) => {
+                    const cursor = e.target.result;
+                    if (!cursor || out.length >= limit) return resolve(out);
+                    const v = cursor.value;
+                    if (String(v.title || '').toLowerCase().includes(q) || String(v.url || '').toLowerCase().includes(q)) out.push(v);
+                    cursor.continue();
+                };
+                req.onerror = () => resolve(out);
+            });
+        } catch (_) { return []; }
+    }
+
+    async removeHistory(id) {
+        if (!this._supported) return false;
+        try {
+            const db = await this.open();
             const tx = db.transaction(['history'], 'readwrite');
-            tx.objectStore('history').delete(n);
+            tx.objectStore('history').delete(Number(id));
             await txComplete(tx);
             broadcast('history-changed');
             return true;
@@ -385,7 +346,6 @@ class KitsDB {
             broadcast('history-changed');
             return true;
         }
-
         try {
             const db = await this.open();
             const tx = db.transaction(['history'], 'readwrite');
@@ -394,62 +354,6 @@ class KitsDB {
             broadcast('history-changed');
             return true;
         } catch (_) { return false; }
-    }
-
-    async migrateLegacy({ storeGet } = {}) {
-        if (!this._supported) return false;
-
-        const migrated = await this.getKV('__migrated_v1', false);
-        if (migrated) return true;
-
-        // Merge bookmarks from localStorage + optional electron-store.
-        const lsBookmarks = safeParseJson(localStorage.getItem('bookmarks') || '[]', []);
-        let storeBookmarks = [];
-        if (typeof storeGet === 'function') {
-            try {
-                const v = await storeGet('bookmarks');
-                storeBookmarks = Array.isArray(v) ? v : [];
-            } catch (_) { storeBookmarks = []; }
-        }
-
-        const mergedMap = new Map();
-        for (const bm of [...storeBookmarks, ...lsBookmarks]) {
-            const n = normalizeBookmark(bm);
-            if (!n) continue;
-            const existing = mergedMap.get(n.url);
-            if (!existing || (n.time || 0) >= (existing.time || 0)) mergedMap.set(n.url, n);
-        }
-        const mergedBookmarks = [...mergedMap.values()].sort((a, b) => (b.time || 0) - (a.time || 0));
-
-        // History (best-effort; only import if DB is empty)
-        const historyCount = await this.count('history');
-        const lsHistory = safeParseJson(localStorage.getItem('browsing-history') || '[]', []);
-        const historyToImport = historyCount === 0 && Array.isArray(lsHistory)
-            ? lsHistory.map(normalizeHistoryItem).filter(Boolean)
-            : [];
-
-        // Settings
-        const theme = localStorage.getItem('theme');
-        const searchEngine = localStorage.getItem('searchEngine');
-        const showBookmarksBar = localStorage.getItem('showBookmarksBar');
-        const profile = safeParseJson(localStorage.getItem('profile') || 'null', null);
-
-        // Commit migration.
-        if (mergedBookmarks.length > 0) await this.setBookmarks(mergedBookmarks);
-        if (historyToImport.length > 0) {
-            const db = await this.open();
-            const tx = db.transaction(['history'], 'readwrite');
-            const store = tx.objectStore('history');
-            for (const h of historyToImport) store.add(h);
-            await txComplete(tx);
-        }
-        if (theme) await this.setKV('theme', theme);
-        if (searchEngine) await this.setKV('searchEngine', searchEngine);
-        if (showBookmarksBar !== null) await this.setKV('showBookmarksBar', showBookmarksBar === 'true');
-        if (profile && typeof profile === 'object') await this.setKV('profile', profile);
-
-        await this.setKV('__migrated_v1', true);
-        return true;
     }
 }
 
