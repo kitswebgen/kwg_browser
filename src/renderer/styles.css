@@ -1,23 +1,15 @@
 :root {
-    /* Google Material Design 3 (approximate dark theme) */
-    color-scheme: dark;
-    --md-sys-color-background: #1E1F22;
-    /* Deep dark background */
-    --md-sys-color-surface: #2B2D31;
-    /* Slightly lighter surface for tabs/inactive */
-    --md-sys-color-surface-container: #383A40;
-    /* Container like omnibox */
-    --md-sys-color-primary: #A8C7FA;
-    /* Google Blue equivalent in dark mode */
-    --md-sys-color-on-primary: #003355;
-    --md-sys-color-secondary-container: #004A77;
-    /* Active tab accent */
-    --md-sys-color-on-surface: #E3E3E3;
-    /* Text */
-    --md-sys-color-on-surface-variant: #C4C7C5;
-    /* Secondary text */
-    --md-sys-color-outline: #8E918F;
-    --md-elevation-level1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+    /* Google Material Design 3 (Light Mode Default) */
+    color-scheme: light;
+    --md-sys-color-background: #F3F3F3;
+    --md-sys-color-surface: #FFFFFF;
+    --md-sys-color-surface-container: #E3E3E3;
+    --md-sys-color-primary: #0B57D0;
+    --md-sys-color-on-primary: #FFFFFF;
+    --md-sys-color-secondary-container: #D3E3FD;
+    --md-sys-color-on-surface: #1F1F1F;
+    --md-sys-color-on-surface-variant: #444746;
+    --md-sys-color-outline: #747775;
 
     --radius-full: 9999px;
     --radius-lg: 16px;
@@ -26,15 +18,14 @@
     --title-height: 40px;
     --tab-height: 38px;
 
-    /* Semantic Glass Variables (Dark Default) */
-    --sys-glass-bg: rgba(30, 33, 40, 0.85);
-    /* Darker, more opaque for readability */
-    --sys-glass-element: rgba(255, 255, 255, 0.08);
-    --sys-glass-border: rgba(255, 255, 255, 0.1);
-    --sys-glass-highlight: rgba(255, 255, 255, 0.04);
-    --sys-glass-shadow: rgba(0, 0, 0, 0.5);
-    --sys-elevation-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    --sys-focus-ring: rgba(168, 199, 250, 0.5);
+    /* Semantic Glass Variables (Light Mode Default) */
+    --sys-glass-bg: rgba(245, 245, 245, 0.70);
+    --sys-glass-element: rgba(0, 0, 0, 0.06);
+    --sys-glass-border: rgba(0, 0, 0, 0.08);
+    --sys-glass-highlight: rgba(0, 0, 0, 0.03);
+    --sys-glass-shadow: rgba(0, 0, 0, 0.10);
+    --sys-elevation-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    --sys-focus-ring: rgba(11, 87, 208, 0.30);
 
     /* Z-Index Hierarchy */
     --z-webview: 0;
@@ -116,6 +107,35 @@ button:focus-visible,
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         background: #FFFFFF;
         border-bottom: none;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --md-sys-color-background: #1E1F22;
+        --md-sys-color-surface: #2B2D31;
+        --md-sys-color-surface-container: #383A40;
+        --md-sys-color-primary: #A8C7FA;
+        --md-sys-color-on-primary: #003355;
+        --md-sys-color-secondary-container: #004A77;
+        --md-sys-color-on-surface: #E3E3E3;
+        --md-sys-color-on-surface-variant: #C4C7C5;
+        --md-sys-color-outline: #8E918F;
+
+        --sys-glass-bg: rgba(30, 33, 40, 0.9);
+        --sys-glass-element: rgba(255, 255, 255, 0.08);
+        --sys-glass-border: rgba(255, 255, 255, 0.1);
+        --sys-glass-highlight: rgba(255, 255, 255, 0.04);
+        --sys-glass-shadow: rgba(0, 0, 0, 0.5);
+        --sys-elevation-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        --sys-focus-ring: rgba(168, 199, 250, 0.5);
+
+        /* Status Colors (Dark) */
+        --sys-color-success: #81C995;
+        --sys-color-warning: #FDD663;
+        --sys-color-error: #F28B82;
+        --sys-color-info: #8AB4F8;
     }
 }
 

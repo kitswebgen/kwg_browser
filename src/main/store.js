@@ -8,6 +8,7 @@ const store = new Store({
         isMaximized: false,
         searchEngine: 'google',
         adBlockEnabled: true,
+        theme: 'system',
         privacySettings: {
             blockThirdPartyCookies: true,
             doNotTrack: true,

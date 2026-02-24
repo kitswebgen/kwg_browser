@@ -1,4 +1,6 @@
-const { ipcMain, session, app, dialog, https, shell, powerMonitor } = require('electron');
+const { ipcMain, session, app, dialog, shell, powerMonitor, nativeTheme } = require('electron');
+const https = require('https');
+const path = require('path');
 const log = require('electron-log/main');
 const { v4: uuidv4 } = require('uuid');
 const store = require('./store');
@@ -134,6 +136,18 @@ function setupIpcHandlers(getMainWindow) {
 
     ipcMain.handle('store-get', (e, key) => store.get(key));
     ipcMain.handle('store-set', (e, key, value) => { store.set(key, value); return true; });
+
+    ipcMain.handle('set-theme', (event, mode) => {
+        if (['light', 'dark', 'system'].includes(mode)) {
+            nativeTheme.themeSource = mode;
+            return true;
+        }
+        return false;
+    });
+
+    ipcMain.handle('get-preload-path', () => {
+        return 'file:///' + path.join(__dirname, '../webview-preload.js').replace(/\\/g, '/');
+    });
 
     // Account management
     ipcMain.handle('account-signup', (event, { name, email, password }) => {

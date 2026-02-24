@@ -14,7 +14,7 @@ export class TabManager {
     }
 
     createTab(url = 'ntp.html', options = { active: true, incognito: false }) {
-        const id = crypto.randomUUID ? crypto.randomUUID().substring(0, 8) : Math.random().toString(36).substr(2, 9);
+        const id = crypto.randomUUID ? crypto.randomUUID().substring(0, 8) : Math.random().toString(36).substring(2, 11);
         const webview = document.createElement('webview');
         const isIncognito = options?.incognito === true;
 
@@ -24,7 +24,11 @@ export class TabManager {
         if (isIncognito) webview.setAttribute('partition', 'incognito');
         webview.src = url;
         webview.setAttribute('allowpopups', '');
-        webview.setAttribute('preload', 'file:///' + window.location.pathname.replace('index.html', 'webview-preload.js').replace(/\\/g, '/'));
+
+        // Robust preload pathing
+        const preloadPath = window.electronAPI?.getPreloadPath ? window.electronAPI.getPreloadPath() : 'webview-preload.js';
+        webview.setAttribute('preload', preloadPath);
+
         webview.setAttribute('webpreferences', 'contextIsolation=false, sandbox=true, nodeIntegration=false');
         webview.id = `webview-${id}`;
         webview.className = 'browser-webview';

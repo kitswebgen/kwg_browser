@@ -22,7 +22,7 @@ function createSplashWindow() {
         skipTaskbar: true,
         webPreferences: { nodeIntegration: false, contextIsolation: true }
     });
-    splashWindow.loadFile(require('path').join(__dirname, '../renderer/splash.html'));
+    splashWindow.loadFile(path.join(__dirname, '../renderer/splash.html'));
     splashWindow.once('ready-to-show', () => splashWindow.show());
     splashWindow.on('closed', () => { splashWindow = null; });
 }
@@ -45,9 +45,9 @@ function createWindow() {
         backgroundColor: '#1E1F22',
         show: false,
         title: 'KITSWebGen',
-        icon: require('path').join(__dirname, '../renderer/icon.png'),
+        icon: path.join(__dirname, '../renderer/icon.png'),
         webPreferences: {
-            preload: require('path').join(__dirname, '../preload.js'),
+            preload: path.join(__dirname, '../preload.js'),
             webviewTag: true,
             nodeIntegration: false,
             contextIsolation: true,
@@ -66,7 +66,7 @@ function createWindow() {
     configureSession('incognito');
 
     mainWindow.webContents.setUserAgent(userAgent);
-    mainWindow.loadFile(require('path').join(__dirname, '../renderer/index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
     if (store.get('isMaximized')) mainWindow.maximize();
 

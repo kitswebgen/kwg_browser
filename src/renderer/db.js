@@ -355,6 +355,30 @@ class KitsDB {
             return true;
         } catch (_) { return false; }
     }
+
+    async migrateLegacy({ storeGet } = {}) {
+        if (!this._supported) return;
+        try {
+            // Migrate theme, searchEngine from localStorage or Electron store
+            const engine = localStorage.getItem('searchEngine') || (storeGet ? await storeGet('searchEngine') : null);
+            if (engine) await this.setKV('searchEngine', engine);
+
+            const theme = localStorage.getItem('theme') || (storeGet ? await storeGet('sumTheme') : null);
+            if (theme) await this.setKV('theme', theme);
+
+            const showBar = localStorage.getItem('showBookmarksBar') || (storeGet ? await storeGet('showBookmarksBar') : null);
+            if (showBar !== null) await this.setKV('showBookmarksBar', showBar === 'true' || showBar === true);
+
+            // Migrate bookmarks from localStorage
+            const legacyBookmarks = safeParseJson(localStorage.getItem('bookmarks'), []);
+            if (Array.isArray(legacyBookmarks) && legacyBookmarks.length > 0) {
+                const current = await this.getBookmarks();
+                if (current.length === 0) await this.setBookmarks(legacyBookmarks);
+            }
+        } catch (e) {
+            console.error('[DB] Migration failed:', e);
+        }
+    }
 }
 
 export const db = new KitsDB();

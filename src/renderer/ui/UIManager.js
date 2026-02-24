@@ -138,34 +138,8 @@ export class UIManager {
         });
     }
 
-    async _syncPrefsFromDB() {
-        if (!db?.supported?.()) return;
-        try {
-            const storedEngine = await db.getKV('searchEngine', null);
-            if (storedEngine && typeof storedEngine === 'string') this.currentSearchEngine = storedEngine;
-
-            const storedTheme = await db.getKV('theme', null);
-            if (storedTheme && typeof storedTheme === 'string') this.theme = storedTheme;
-
-            const storedShow = await db.getKV('showBookmarksBar', null);
-            if (typeof storedShow === 'boolean') this.showBookmarksBar = storedShow;
-
-            try { localStorage.setItem('searchEngine', this.currentSearchEngine); } catch (_) { }
-            try { localStorage.setItem('theme', this.theme); } catch (_) { }
-            try { localStorage.setItem('showBookmarksBar', String(this.showBookmarksBar)); } catch (_) { }
-
-            if (this.elements.engineSelect) this.elements.engineSelect.value = this.currentSearchEngine;
-            this.updateSearchEngineIcon();
-            if (this.elements.themeSelect) this.elements.themeSelect.value = this.theme;
-            this.applyTheme(this.theme);
-            this.renderBookmarksBar();
-            this.updateUI();
-        } catch (_) { }
-    }
-
     async hydrateFromDB() {
         if (!db?.supported?.()) return;
-
         try {
             const storedEngine = await db.getKV('searchEngine', null);
             if (storedEngine && typeof storedEngine === 'string') this.currentSearchEngine = storedEngine;
@@ -176,7 +150,6 @@ export class UIManager {
             const storedShow = await db.getKV('showBookmarksBar', null);
             if (typeof storedShow === 'boolean') this.showBookmarksBar = storedShow;
 
-            // Keep localStorage in sync for internal pages and quick access.
             try { localStorage.setItem('searchEngine', this.currentSearchEngine); } catch (_) { }
             try { localStorage.setItem('theme', this.theme); } catch (_) { }
             try { localStorage.setItem('showBookmarksBar', String(this.showBookmarksBar)); } catch (_) { }
@@ -189,7 +162,7 @@ export class UIManager {
             await this.getBookmarks();
             this.renderBookmarksBar();
             this.updateUI();
-        } catch (_) { }
+        } catch (e) { console.error('[UI] Hydration failed:', e); }
     }
 
     startGlobalClock() {
@@ -302,27 +275,7 @@ export class UIManager {
         } catch (e) { console.error(e); }
     }
 
-    navigateOmnibox() {
-        const { omnibox, suggestionsList } = this.elements;
-        let input = omnibox.value.trim();
-        if (!input) return;
-        const active = this.TM.getActive();
-        if (!active) return;
 
-        if (input === 'kits://history') { this.TM.createTab('history.html'); omnibox.blur(); return; }
-        if (input === 'kits://bookmarks') { this.TM.createTab('bookmarks.html'); omnibox.blur(); return; }
-        if (input === 'kits://downloads') { this.openDownloads(); omnibox.blur(); return; }
-        if (input === 'kits://newtab') { this.TM.createTab('ntp.html'); omnibox.blur(); return; }
-        if (input === 'kits://settings') { document.getElementById('settings-modal').classList.remove('hidden'); omnibox.blur(); return; }
-
-        if (!input.startsWith('http://') && !input.startsWith('https://')) {
-            if (input.includes('.') && !input.includes(' ')) input = 'https://' + input;
-            else input = this.searchEngines[this.currentSearchEngine] + encodeURIComponent(input);
-        }
-        active.webviewEl.loadURL(input);
-        omnibox.blur();
-        this.elements.suggestionsList.classList.add('hidden');
-    }
 
     setupOmnibox() {
         const { omnibox, suggestionsList } = this.elements;
@@ -444,6 +397,13 @@ export class UIManager {
 
         let input = omnibox.value.trim();
         if (!input) return;
+
+        // kits:// URLs
+        if (input === 'kits://history') { this.TM.createTab('history.html'); omnibox.blur(); return; }
+        if (input === 'kits://bookmarks') { this.TM.createTab('bookmarks.html'); omnibox.blur(); return; }
+        if (input === 'kits://downloads') { this.openDownloads(); omnibox.blur(); return; }
+        if (input === 'kits://newtab') { this.TM.createTab('ntp.html'); omnibox.blur(); return; }
+        if (input === 'kits://settings') { document.getElementById('settings-modal')?.classList.remove('hidden'); omnibox.blur(); return; }
 
         // Check for search engine prefixes (bangs)
         const prefixes = {
@@ -1043,10 +1003,12 @@ export class UIManager {
     }
 
     applyTheme(mode) {
-        const m = mode === 'dark' || mode === 'light' ? mode : 'system';
-        this.theme = m;
-        if (m === 'system') document.documentElement.removeAttribute('data-theme');
-        else document.documentElement.setAttribute('data-theme', m);
+        this.theme = mode || 'system';
+        document.documentElement.setAttribute('data-theme', this.theme);
+
+        if (window.electronAPI?.setTheme) {
+            window.electronAPI.setTheme(this.theme).catch(() => { });
+        }
     }
 
     _readLocalArray(key) {

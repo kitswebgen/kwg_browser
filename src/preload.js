@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     automateWeb: (script) => ipcRenderer.invoke('automate-web', script),
     capturePage: () => ipcRenderer.invoke('capture-page'),
 
+    getPreloadPath: () => ipcRenderer.invoke('get-preload-path'),
+
     // Cache
     clearCache: (options = {}) => ipcRenderer.invoke('clear-cache-production', options),
     clearSiteData: (options = {}) => ipcRenderer.invoke('clear-site-data-production', options),
@@ -21,10 +23,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onNewTab: (callback) => ipcRenderer.on('new-tab-from-main', (e, url) => callback(url)),
     onDownloadStatus: (callback) => ipcRenderer.on('download-status', (e, data) => callback(data)),
     onSecurityWarning: (callback) => ipcRenderer.on('security-warning', (e, data) => callback(data)),
-    onSecurityWarning: (callback) => ipcRenderer.on('security-warning', (e, data) => callback(data)),
     onMenuAction: (callback) => ipcRenderer.on('menu-action', (e, action) => callback(action)),
     onPerformSearch: (callback) => ipcRenderer.on('perform-search', (e, query) => callback(query)),
     onPowerEvent: (callback) => ipcRenderer.on('power-event', (e, data) => callback(data)),
+    setTheme: (mode) => ipcRenderer.invoke('set-theme', mode),
 
     // Persistent Store
     storeGet: (key) => ipcRenderer.invoke('store-get', key),
