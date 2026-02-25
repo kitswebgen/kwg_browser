@@ -29,8 +29,6 @@ function createSplashWindow() {
 
 function createWindow() {
     const savedBounds = store.get('windowBounds');
-    const sessionId = uuidv4();
-    store.set('sessionId', sessionId);
 
     mainWindow = new BrowserWindow({
         width: savedBounds.width,

@@ -161,11 +161,15 @@ function configureSession(partition) {
         const safety = checkUrlSafety(url);
         if (!safety.safe) {
             log.warn(`[SafeBrowsing] Blocked: ${url.substring(0, 80)} — ${safety.reason}`);
-            mainWindowInstance?.webContents.send('security-warning', {
-                type: 'safe-browsing',
-                url: url.substring(0, 100),
-                reason: safety.reason
-            });
+            if (mainWindowInstance && !mainWindowInstance.isDestroyed()) {
+                try {
+                    mainWindowInstance.webContents.send('security-warning', {
+                        type: 'safe-browsing',
+                        url: url.substring(0, 100),
+                        reason: safety.reason
+                    });
+                } catch (e) { }
+            }
             return callback({ cancel: true });
         }
 
@@ -175,7 +179,10 @@ function configureSession(partition) {
 
         if (store.get('adBlockEnabled')) {
             try {
-                const host = new URL(url).hostname;
+                const urlObj = new URL(url);
+                const host = urlObj.hostname;
+                if (!host) return callback({ cancel: false });
+
                 let shouldBlock = adBlockSet.has(host);
                 if (!shouldBlock) {
                     const parts = host.split('.');
@@ -187,7 +194,9 @@ function configureSession(partition) {
                     sessionBlockCount++;
                     return callback({ cancel: true });
                 }
-            } catch (e) { }
+            } catch (e) {
+                // If URL parsing fails, continue without blocking
+            }
         }
 
         callback({ cancel: false });
@@ -233,7 +242,11 @@ function configureSession(partition) {
         log.info(`[Download] ${isIncognito ? '[Incognito] ' : ''}${isDangerous ? '⚠️ DANGEROUS ' : ''}${filename} → ${filePath}`);
 
         if (isDangerous) {
-            mainWindowInstance?.webContents.send('security-warning', { type: 'dangerous-download', filename, extension: ext });
+            if (mainWindowInstance && !mainWindowInstance.isDestroyed()) {
+                try {
+                    mainWindowInstance.webContents.send('security-warning', { type: 'dangerous-download', filename, extension: ext });
+                } catch (e) { }
+            }
         }
 
         const startMs = Date.now();
@@ -243,18 +256,27 @@ function configureSession(partition) {
             const progress = total > 0 ? (received / total) * 100 : 0;
             const elapsedMs = Math.max(1, Date.now() - startMs);
             const speedBps = Math.max(0, received / (elapsedMs / 1000));
-            mainWindowInstance?.webContents.send('download-status', {
-                id: downloadId,
-                status: state === 'interrupted' ? 'interrupted' : (item.isPaused() ? 'paused' : 'downloading'),
-                filename, progress, received, total,
-                speed: Math.round(speedBps),
-                isDangerous,
-                incognito: isIncognito
-            });
+
+            if (mainWindowInstance && !mainWindowInstance.isDestroyed()) {
+                try {
+                    mainWindowInstance.webContents.send('download-status', {
+                        id: downloadId,
+                        status: state === 'interrupted' ? 'interrupted' : (item.isPaused() ? 'paused' : 'downloading'),
+                        filename, progress, received, total,
+                        speed: Math.round(speedBps),
+                        isDangerous,
+                        incognito: isIncognito
+                    });
+                } catch (e) { }
+            }
         });
 
         item.once('done', (event, state) => {
-            mainWindowInstance?.webContents.send('download-status', { id: downloadId, status: state, filename, path: filePath, isDangerous, incognito: isIncognito });
+            if (mainWindowInstance && !mainWindowInstance.isDestroyed()) {
+                try {
+                    mainWindowInstance.webContents.send('download-status', { id: downloadId, status: state, filename, path: filePath, isDangerous, incognito: isIncognito });
+                } catch (e) { }
+            }
             if (isIncognito) return;
 
             const history = store.get('downloadHistory', []);
